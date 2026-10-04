@@ -1,0 +1,130 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { MAX_SIZE, listUpcoming } from "../lib/db";
+import { currentPerson } from "../lib/identity";
+import { formatWhen, toLocalInput } from "../lib/time";
+
+
+const person = currentPerson(Astro.cookies);
+const now = new Date();
+const upcoming = person ? listUpcoming(now) : [];
+const mine = upcoming.filter((i) => i.going.some((g) => g.id === person?.id));
+const open = upcoming.filter((i) => !mine.includes(i));
+
+const errors: Record<string, string> = {
+  name: "Give a name between 1 and 40 characters.",
+  details: "Say what it is and where (up to 80 characters each).",
+  time: "Pick a time that hasn't passed yet.",
+  size: `A group is between 2 and ${MAX_SIZE} people, you included.`,
+  full: "That one filled up just before you joined.",
+  gone: "That one has already started.",
+};
+const error = errors[Astro.url.searchParams.get("error") ?? ""];
+---
+
+<Layout title="Vybe" active="invites">
+  {error && <p class="notice" role="alert">{error}</p>}
+
+  {
+    !person ? (
+      <section class="card">
+        <h1>Find people to do things with</h1>
+        <p>Post what you want to do, when and where. Anyone free can join until it's full.</p>
+        <form method="post" action="/api/name" class="stack">
+          <label>
+            What should people call you?
+            <input name="name" required maxlength="40" autocomplete="given-name" />
+          </label>
+          <button>Continue</button>
+        </form>
+      </section>
+    ) : (
+      <>
+        <p class="greeting">Hi, {person.name}.</p>
+
+        <section aria-labelledby="your-plans">
+          <h2 id="your-plans">Your plans</h2>
+          {mine.length === 0 ? (
+            <p class="empty">Nothing yet. Join something below, or post your own.</p>
+          ) : (
+            <ul class="invites">
+              {mine.map((invite) => (
+                <li id={`invite-${invite.id}`} class="invite invite--mine">
+                  <h3>{invite.title}</h3>
+                  <p class="invite__when">
+                    {formatWhen(invite.startsAt, now)} · {invite.place}
+                  </p>
+                  <p>
+                    {invite.going.length} of {invite.size} going: {invite.going.map((g) => g.name).join(", ")}
+                  </p>
+                  {invite.hostId !== person.id && (
+                    <form method="post" action="/api/join">
+                      <input type="hidden" name="invite" value={invite.id} />
+                      <input type="hidden" name="action" value="leave" />
+                      <button class="secondary">Leave</button>
+                    </form>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section aria-labelledby="open-invites">
+          <h2 id="open-invites">Open invites</h2>
+          {open.length === 0 ? (
+            <p class="empty">No open invites right now.</p>
+          ) : (
+            <ul class="invites">
+              {open.map((invite) => {
+                const full = invite.going.length >= invite.size;
+                return (
+                  <li id={`invite-${invite.id}`} class="invite">
+                    <h3>{invite.title}</h3>
+                    <p class="invite__when">
+                      {formatWhen(invite.startsAt, now)} · {invite.place}
+                    </p>
+                    <p>
+                      {invite.going.length} of {invite.size} going · posted by {invite.host}
+                    </p>
+                    {full ? (
+                      <p class="invite__full">Full</p>
+                    ) : (
+                      <form method="post" action="/api/join">
+                        <input type="hidden" name="invite" value={invite.id} />
+                        <button>Join</button>
+                      </form>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        <section aria-labelledby="post" class="card">
+          <h2 id="post">Post an invite</h2>
+          <form method="post" action="/api/invites" class="stack">
+            <label>
+              What
+              <input name="title" required maxlength="80" placeholder="Pickleball, doubles" />
+            </label>
+            <label>
+              Where
+              <input name="place" required maxlength="80" placeholder="ANU Sport courts" />
+            </label>
+            <label>
+              When
+              <input name="startsAt" type="datetime-local" required min={toLocalInput(now)} />
+            </label>
+            <label>
+              How many people, you included
+              <input name="size" type="number" required min="2" max={MAX_SIZE} value="4" />
+            </label>
+            <button>Post</button>
+          </form>
+        </section>
+      </>
+    )
+  }
+</Layout>
