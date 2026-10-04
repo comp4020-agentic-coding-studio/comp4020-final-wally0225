@@ -1,20 +1,13 @@
 {
-  // Covers the supplied harness (spec/, scripts/); widen `include` if your app
-  // is TypeScript and you want `pnpm typecheck` to cover it too.
+  // Astro's strict preset covers the app (src/); the supplied harness (spec/,
+  // scripts/) keeps its own settings: scripts run under node directly, so
+  // imports name the file they mean, extension and all.
+  "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
-    "target": "ES2023",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    // Imports name the file they mean, extension and all --- which is what
-    // node itself wants when it runs a .ts file directly.
     "allowImportingTsExtensions": true,
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": ["node"],
-    "strict": true,
-    "noEmit": true,
-    "skipLibCheck": true,
-    "moduleDetection": "force",
     "verbatimModuleSyntax": true
   },
-  "include": ["*.ts", "spec", "scripts"]
+  "include": [".astro/types.d.ts", "*.ts", "src", "spec", "scripts"],
+  "exclude": ["dist", "node_modules"]
 }
