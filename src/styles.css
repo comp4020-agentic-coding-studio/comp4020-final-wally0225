@@ -155,3 +155,8 @@ button.secondary {
 .prose img {
   max-width: 100%;
 }
+
+.invite--past {
+  background: transparent;
+  color: var(--muted);
+}

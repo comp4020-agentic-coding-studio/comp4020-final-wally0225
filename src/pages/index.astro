@@ -1,13 +1,13 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { MAX_SIZE, listUpcoming } from "../lib/db";
+import { MAX_SIZE, listPast, listUpcoming } from "../lib/db";
 import { currentPerson } from "../lib/identity";
-import { formatWhen, toLocalInput } from "../lib/time";
-
+import { formatPast, formatWhen, toLocalInput } from "../lib/time";
 
 const person = currentPerson(Astro.cookies);
 const now = new Date();
 const upcoming = person ? listUpcoming(now) : [];
+const past = person ? listPast(person.id, now) : [];
 const mine = upcoming.filter((i) => i.going.some((g) => g.id === person?.id));
 const open = upcoming.filter((i) => !mine.includes(i));
 
@@ -124,6 +124,23 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
             <button>Post</button>
           </form>
         </section>
+
+        {past.length > 0 && (
+          <section aria-labelledby="past-plans">
+            <h2 id="past-plans">Past plans</h2>
+            <ul class="invites">
+              {past.map((invite) => (
+                <li class="invite invite--past">
+                  <h3>{invite.title}</h3>
+                  <p class="invite__when">
+                    {formatPast(invite.startsAt, now)} · {invite.place}
+                  </p>
+                  <p>With {invite.going.filter((g) => g.id !== person.id).map((g) => g.name).join(", ") || "just you"}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </>
     )
   }

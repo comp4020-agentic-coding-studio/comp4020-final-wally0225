@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import Database from "better-sqlite3";
-import { and, asc, eq, gt, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, lte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { type Invite, type Person, invites, joins, people } from "./schema";
@@ -52,6 +52,28 @@ export function listUpcoming(now: Date): InviteView[] {
     .where(gt(invites.startsAt, now))
     .orderBy(asc(invites.startsAt))
     .all();
+  return withGoing(rows);
+}
+
+// How many past plans someone sees; enough to find the same people again.
+export const PAST_LIMIT = 20;
+
+// What someone went to, most recent first, with who else was there. Only
+// their own: nobody else can see what you've been to.
+export function listPast(personId: string, now: Date): InviteView[] {
+  const rows = db
+    .select({ invite: invites, host: people.name })
+    .from(joins)
+    .innerJoin(invites, eq(joins.inviteId, invites.id))
+    .innerJoin(people, eq(invites.hostId, people.id))
+    .where(and(eq(joins.personId, personId), lte(invites.startsAt, now)))
+    .orderBy(desc(invites.startsAt))
+    .limit(PAST_LIMIT)
+    .all();
+  return withGoing(rows);
+}
+
+function withGoing(rows: { invite: Invite; host: string }[]): InviteView[] {
   if (rows.length === 0) return [];
 
   const going = db
