@@ -66,12 +66,12 @@ function formatDay(at: Date, now: Date): string {
 // "5:30 pm"
 export const formatClock = clock;
 
-// An invite that hasn't ended: "Happening now, until 6:30 pm", "in 25 min,
+// An invite that hasn't ended: "Started 5:00 pm, until 6:30 pm", "in 25 min,
 // until 6:30 pm", or "Today 5:00 pm – 6:30 pm" once it's an hour off.
 // Invites from before end times existed have none.
 export function formatWhen(at: Date, now: Date, until: Date | null): string {
   const minutes = Math.round((at.getTime() - now.getTime()) / 60_000);
-  if (minutes <= 0) return "Happening now" + (until ? `, until ${clock(until)}` : "");
+  if (minutes <= 0) return `Started ${clock(at)}` + (until ? `, until ${clock(until)}` : "");
   if (minutes < 60) return `in ${minutes} min` + (until ? `, until ${clock(until)}` : "");
   return formatDay(at, now) + (until ? ` – ${clock(until)}` : "");
 }

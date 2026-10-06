@@ -1,0 +1,16 @@
+---
+// A first-name initial on a colour picked from the name, so the same person
+// looks the same on every invite. Decorative: the name is always in the text.
+interface Props {
+  name: string;
+  large?: boolean;
+}
+
+const { name, large = false } = Astro.props;
+const initial = (Array.from(name.trim())[0] ?? "?").toUpperCase();
+let hash = 0;
+for (const c of name) hash = (Math.imul(hash, 31) + (c.codePointAt(0) ?? 0)) >>> 0;
+const hue = Math.imul(hash, 137) % 360;
+---
+
+<span class:list={["avatar", { "avatar--large": large }]} style={`--hue: ${hue}`} aria-hidden="true">{initial}</span>

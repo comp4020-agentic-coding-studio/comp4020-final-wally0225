@@ -1,8 +1,11 @@
 ---
+import Avatar from "../components/Avatar.astro";
+import Icon from "../components/Icon.astro";
+import InviteCard from "../components/InviteCard.astro";
 import Layout from "../layouts/Layout.astro";
-import { LATE_CUTOFF_MINUTES, MAX_HOURS, MAX_SIZE, arrivalOptions, canJoin, listPast, listUpcoming } from "../lib/db";
+import { LATE_CUTOFF_MINUTES, MAX_HOURS, MAX_SIZE, canJoin, listPast, listUpcoming } from "../lib/db";
 import { currentPerson } from "../lib/identity";
-import { TIME_SLOTS, formatClock, formatPast, formatWhen, nextStep, toLocalInput } from "../lib/time";
+import { TIME_SLOTS, nextStep, toLocalInput } from "../lib/time";
 
 const person = currentPerson(Astro.cookies);
 const now = new Date();
@@ -30,120 +33,97 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
 ---
 
 <Layout title="Vybe" active="invites">
-  {error && <p class="notice" role="alert">{error}</p>}
+  {
+    error && (
+      <p class="toast" role="alert">
+        <Icon name="alert" />
+        {error}
+      </p>
+    )
+  }
 
   {
     !person ? (
-      <section class="card">
-        <h1>Find people to do things with</h1>
-        <p>Post what you want to do, when and where. Anyone free can join until it's full.</p>
-        <form method="post" action="/api/name" class="stack">
-          <label>
-            What should people call you?
-            <input name="name" required maxlength="40" autocomplete="given-name" />
+      <section class="hero">
+        <h1>
+          Find people to <span class="accent">do things</span> with
+        </h1>
+        <p class="lead">Post what you want to do, when and where. Anyone free can join until it's full.</p>
+        <form method="post" action="/api/name" class="card stack">
+          <label class="field">
+            <span class="field__label">What should people call you?</span>
+            <input name="name" required maxlength="40" autocomplete="given-name" placeholder="Your first name" />
           </label>
-          <button>Continue</button>
+          <button class="button button--wide">Get started</button>
         </form>
       </section>
     ) : (
       <>
-        <p class="greeting">Hi, {person.name}.</p>
+        <section class="hello">
+          <div class="hello__who">
+            <Avatar name={person.name} large />
+            <div>
+              <h1>Hi, {person.name}</h1>
+              <p class="muted">What do you feel like doing?</p>
+            </div>
+          </div>
+          <a class="button" href="#post">
+            <Icon name="plus" />
+            Post an invite
+          </a>
+        </section>
 
-        <section aria-labelledby="your-plans">
-          <h2 id="your-plans">Your plans</h2>
+        <section aria-labelledby="your-plans" class="section">
+          <div class="section__head">
+            <h2 id="your-plans">Your plans</h2>
+            {mine.length > 0 && <span class="pill">{mine.length}</span>}
+          </div>
           {mine.length === 0 ? (
             <p class="empty">Nothing yet. Join something below, or post your own.</p>
           ) : (
             <ul class="invites">
               {mine.map((invite) => (
-                <li id={`invite-${invite.id}`} class="invite invite--mine">
-                  <h3>{invite.title}</h3>
-                  <p class="invite__when">
-                    {formatWhen(invite.startsAt, now, invite.endsAt)} · {invite.place}
-                  </p>
-                  <p>
-                    {invite.going.length} of {invite.size} going:{" "}
-                    {invite.going
-                      .map((g) => (g.arrivesAt ? `${g.name} (from ${formatClock(g.arrivesAt)})` : g.name))
-                      .join(", ")}
-                  </p>
-                  {invite.hostId !== person.id && (
-                    <form method="post" action="/api/join">
-                      <input type="hidden" name="invite" value={invite.id} />
-                      <input type="hidden" name="action" value="leave" />
-                      <button class="secondary">Leave</button>
-                    </form>
-                  )}
-                </li>
+                <InviteCard invite={invite} now={now} personId={person.id} variant="mine" />
               ))}
             </ul>
           )}
         </section>
 
-        <section aria-labelledby="open-invites">
-          <h2 id="open-invites">Open invites</h2>
+        <section aria-labelledby="open-invites" class="section">
+          <div class="section__head">
+            <h2 id="open-invites">Open invites</h2>
+            {open.length > 0 && <span class="pill">{open.length}</span>}
+          </div>
           {open.length === 0 ? (
-            <p class="empty">No open invites right now.</p>
+            <p class="empty">No open invites right now. Be the first to post one.</p>
           ) : (
             <ul class="invites">
-              {open.map((invite) => {
-                const full = invite.going.length >= invite.size;
-                const arrival = arrivalOptions(invite, now);
-                return (
-                  <li id={`invite-${invite.id}`} class="invite">
-                    <h3>{invite.title}</h3>
-                    <p class="invite__when">
-                      {formatWhen(invite.startsAt, now, invite.endsAt)} · {invite.place}
-                    </p>
-                    <p>
-                      {invite.going.length} of {invite.size} going · posted by {invite.host}
-                    </p>
-                    {full ? (
-                      <p class="invite__full">Full</p>
-                    ) : (
-                      <form method="post" action="/api/join" class="join">
-                        <input type="hidden" name="invite" value={invite.id} />
-                        <label>
-                          When can you get there?
-                          <select name="arrival">
-                            {arrival.onTime && <option value="start">On time ({formatClock(invite.startsAt)})</option>}
-                            {arrival.late.map((t) => (
-                              <option value={t.getTime()}>
-                                {formatClock(t)} ({Math.round((t.getTime() - invite.startsAt.getTime()) / 60_000)} min
-                                late)
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <button>Join</button>
-                      </form>
-                    )}
-                  </li>
-                );
-              })}
+              {open.map((invite) => (
+                <InviteCard invite={invite} now={now} personId={person.id} variant="open" />
+              ))}
             </ul>
           )}
         </section>
 
-        <section aria-labelledby="post" class="card">
+        <section aria-labelledby="post" class="section card">
           <h2 id="post">Post an invite</h2>
           <form method="post" action="/api/invites" class="stack">
-            <label>
-              What
+            <label class="field">
+              <span class="field__label">What</span>
               <input name="title" required maxlength="80" placeholder="Pickleball, doubles" />
             </label>
-            <label>
-              Where
+            <label class="field">
+              <span class="field__label">Where</span>
               <input name="place" required maxlength="80" placeholder="ANU Sport courts" />
             </label>
             <fieldset class="when">
-              <legend>When</legend>
-              <label>
-                Date
+              <legend class="field__label">When</legend>
+              <label class="field when__date">
+                <span class="field__label field__label--sub">Date</span>
                 <input name="date" type="date" required min={today} value={defaultDate} />
               </label>
-              <label>
-                Starts
+              <label class="field">
+                <span class="field__label field__label--sub">Starts</span>
                 <select name="startTime" required>
                   {TIME_SLOTS.map((slot) => (
                     <option value={slot.value} selected={slot.value === defaultStart}>
@@ -152,8 +132,8 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
                   ))}
                 </select>
               </label>
-              <label>
-                Ends
+              <label class="field">
+                <span class="field__label field__label--sub">Ends</span>
                 <select name="endTime" required>
                   {TIME_SLOTS.map((slot) => (
                     <option value={slot.value} selected={slot.value === defaultEnd}>
@@ -163,26 +143,22 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
                 </select>
               </label>
             </fieldset>
-            <label>
-              How many people, you included
+            <label class="field">
+              <span class="field__label">How many people, you included</span>
               <input name="size" type="number" required min="2" max={MAX_SIZE} value="4" />
             </label>
-            <button>Post</button>
+            <button class="button button--wide">Post invite</button>
           </form>
         </section>
 
         {past.length > 0 && (
-          <section aria-labelledby="past-plans">
-            <h2 id="past-plans">Past plans</h2>
+          <section aria-labelledby="past-plans" class="section">
+            <div class="section__head">
+              <h2 id="past-plans">Past plans</h2>
+            </div>
             <ul class="invites">
               {past.map((invite) => (
-                <li class="invite invite--past">
-                  <h3>{invite.title}</h3>
-                  <p class="invite__when">
-                    {formatPast(invite.startsAt, now, invite.endsAt)} · {invite.place}
-                  </p>
-                  <p>With {invite.going.filter((g) => g.id !== person.id).map((g) => g.name).join(", ") || "just you"}</p>
-                </li>
+                <InviteCard invite={invite} now={now} personId={person.id} variant="past" />
               ))}
             </ul>
           </section>

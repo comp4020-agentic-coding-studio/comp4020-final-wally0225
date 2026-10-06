@@ -14,15 +14,21 @@ const { title, active } = Astro.props;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f4f8f8" />
     <title>{title}</title>
   </head>
   <body>
-    <header class="site-header">
-      <a class="site-header__name" href="/">Vybe</a>
-      <nav aria-label="site">
-        <a href="/" aria-current={active === "invites" ? "page" : undefined}>Invites</a>
-        <a href="/readme/" aria-current={active === "about" ? "page" : undefined}>About</a>
-      </nav>
+    <header class="appbar">
+      <div class="appbar__inner">
+        <a class="brand" href="/">
+          <span class="brand__mark" aria-hidden="true">V</span>
+          <span>Vybe</span>
+        </a>
+        <nav aria-label="site" class="tabs">
+          <a href="/" aria-current={active === "invites" ? "page" : undefined}>Invites</a>
+          <a href="/readme/" aria-current={active === "about" ? "page" : undefined}>About</a>
+        </nav>
+      </div>
     </header>
     <main>
       <slot />
