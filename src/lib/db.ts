@@ -101,6 +101,7 @@ export function createInvite(values: {
   title: string;
   place: string;
   startsAt: Date;
+  endsAt: Date;
   size: number;
 }): Invite {
   return db.transaction((tx) => {
@@ -112,6 +113,11 @@ export function createInvite(values: {
 
 // Biggest group an invite can ask for, the host included.
 export const MAX_SIZE = 30;
+
+// Longest an invite can run. An end time earlier than the start means the
+// next day (11 pm to 1 am); the cap catches an end picked by mistake (a 5 pm
+// start ending at 4 pm would otherwise run 23 hours).
+export const MAX_HOURS = 12;
 
 export type JoinResult = "joined" | "already" | "full" | "gone";
 

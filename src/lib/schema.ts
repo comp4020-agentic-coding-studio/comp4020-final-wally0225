@@ -28,6 +28,9 @@ export const invites = sqliteTable("invites", {
   title: text().notNull(),
   place: text().notNull(),
   startsAt: int("starts_at", { mode: "timestamp_ms" }).notNull(),
+  // every new invite has one; null only on invites posted before end times
+  // existed, which the volume still holds
+  endsAt: int("ends_at", { mode: "timestamp_ms" }),
   size: int().notNull(),
   createdAt: int("created_at", { mode: "timestamp_ms" })
     .notNull()

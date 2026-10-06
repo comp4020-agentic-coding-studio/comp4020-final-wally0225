@@ -28,30 +28,36 @@ async function person(name: string): Promise<string> {
   return cookie;
 }
 
-// datetime-local value for a few minutes from now, in Canberra time, which is
-// how the app reads the form.
-function soon(minutes: number): string {
-  const p = Object.fromEntries(
-    new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Australia/Canberra",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hourCycle: "h23",
-    })
-      .formatToParts(Date.now() + minutes * 60_000)
-      .map((part) => [part.type, part.value]),
-  );
-  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+// The form's date and five-minute start and end fields for an invite starting
+// a few minutes from now and running an hour, in Canberra time, which is how
+// the app reads them.
+function soon(minutes: number): { date: string; startTime: string; endTime: string } {
+  const step = 5 * 60_000;
+  const start = Math.ceil((Date.now() + minutes * 60_000) / step) * step;
+  const local = (at: number) =>
+    Object.fromEntries(
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Australia/Canberra",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+      })
+        .formatToParts(at)
+        .map((part) => [part.type, part.value]),
+    );
+  const s = local(start);
+  const e = local(start + 60 * 60_000);
+  return { date: `${s.year}-${s.month}-${s.day}`, startTime: `${s.hour}:${s.minute}`, endTime: `${e.hour}:${e.minute}` };
 }
 
 it("never lets more people join than the invite has room for", async () => {
   const host = await person("Host");
   const res = await post(
     "/api/invites",
-    { title: "Spec check: full means full", place: "Nowhere", startsAt: soon(5), size: "3" },
+    { title: "Spec check: full means full", place: "Nowhere", ...soon(5), size: "3" },
     host,
   );
   const invite = res.headers.get("location")?.match(/#invite-(\d+)$/)?.[1];

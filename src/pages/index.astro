@@ -1,8 +1,8 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { MAX_SIZE, listPast, listUpcoming } from "../lib/db";
+import { MAX_HOURS, MAX_SIZE, listPast, listUpcoming } from "../lib/db";
 import { currentPerson } from "../lib/identity";
-import { formatPast, formatWhen, toLocalInput } from "../lib/time";
+import { TIME_SLOTS, formatPast, formatWhen, nextStep, toLocalInput } from "../lib/time";
 
 const person = currentPerson(Astro.cookies);
 const now = new Date();
@@ -11,10 +11,16 @@ const past = person ? listPast(person.id, now) : [];
 const mine = upcoming.filter((i) => i.going.some((g) => g.id === person?.id));
 const open = upcoming.filter((i) => !mine.includes(i));
 
+// The form starts on the next five-minute step, running an hour.
+const today = toLocalInput(now).slice(0, 10);
+const [defaultDate, defaultStart] = toLocalInput(nextStep(now)).split("T");
+const defaultEnd = toLocalInput(new Date(nextStep(now).getTime() + 3_600_000)).slice(11);
+
 const errors: Record<string, string> = {
   name: "Give a name between 1 and 40 characters.",
   details: "Say what it is and where (up to 80 characters each).",
-  time: "Pick a time that hasn't passed yet.",
+  time: "Pick a start time that hasn't passed yet.",
+  end: `Pick an end time after the start, at most ${MAX_HOURS} hours later.`,
   size: `A group is between 2 and ${MAX_SIZE} people, you included.`,
   full: "That one filled up just before you joined.",
   gone: "That one has already started.",
@@ -52,7 +58,7 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
                 <li id={`invite-${invite.id}`} class="invite invite--mine">
                   <h3>{invite.title}</h3>
                   <p class="invite__when">
-                    {formatWhen(invite.startsAt, now)} · {invite.place}
+                    {formatWhen(invite.startsAt, now, invite.endsAt)} · {invite.place}
                   </p>
                   <p>
                     {invite.going.length} of {invite.size} going: {invite.going.map((g) => g.name).join(", ")}
@@ -82,7 +88,7 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
                   <li id={`invite-${invite.id}`} class="invite">
                     <h3>{invite.title}</h3>
                     <p class="invite__when">
-                      {formatWhen(invite.startsAt, now)} · {invite.place}
+                      {formatWhen(invite.startsAt, now, invite.endsAt)} · {invite.place}
                     </p>
                     <p>
                       {invite.going.length} of {invite.size} going · posted by {invite.host}
@@ -113,10 +119,33 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
               Where
               <input name="place" required maxlength="80" placeholder="ANU Sport courts" />
             </label>
-            <label>
-              When
-              <input name="startsAt" type="datetime-local" required min={toLocalInput(now)} />
-            </label>
+            <fieldset class="when">
+              <legend>When</legend>
+              <label>
+                Date
+                <input name="date" type="date" required min={today} value={defaultDate} />
+              </label>
+              <label>
+                Starts
+                <select name="startTime" required>
+                  {TIME_SLOTS.map((slot) => (
+                    <option value={slot.value} selected={slot.value === defaultStart}>
+                      {slot.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Ends
+                <select name="endTime" required>
+                  {TIME_SLOTS.map((slot) => (
+                    <option value={slot.value} selected={slot.value === defaultEnd}>
+                      {slot.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </fieldset>
             <label>
               How many people, you included
               <input name="size" type="number" required min="2" max={MAX_SIZE} value="4" />
@@ -133,7 +162,7 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
                 <li class="invite invite--past">
                   <h3>{invite.title}</h3>
                   <p class="invite__when">
-                    {formatPast(invite.startsAt, now)} · {invite.place}
+                    {formatPast(invite.startsAt, now, invite.endsAt)} · {invite.place}
                   </p>
                   <p>With {invite.going.filter((g) => g.id !== person.id).map((g) => g.name).join(", ") || "just you"}</p>
                 </li>

@@ -1,0 +1,1 @@
+ALTER TABLE `invites` ADD `ends_at` integer;
