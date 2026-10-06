@@ -199,3 +199,17 @@ select {
     grid-template-columns: 1fr;
   }
 }
+
+/* Arrival time and the Join button on one line, wrapping on a phone. */
+.join {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: end;
+  margin-top: 0.5rem;
+}
+
+.join label {
+  font-weight: 400;
+  flex: 1 1 12rem;
+}

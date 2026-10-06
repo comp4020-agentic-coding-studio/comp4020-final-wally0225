@@ -15,7 +15,13 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     return redirect(`/#invite-${inviteId}`, 303);
   }
 
-  const result = joinInvite(inviteId, person.id, new Date());
-  if (result === "full" || result === "gone") return redirect(`/?error=${result}`, 303);
+  // "start" (or nothing) means on time; otherwise the arrival time the join
+  // form offered, as milliseconds
+  const arrival = String(form.get("arrival") ?? "start");
+  const arrivesAt = arrival === "start" ? null : new Date(Number(arrival));
+  if (arrivesAt && Number.isNaN(arrivesAt.getTime())) return redirect("/?error=arrival", 303);
+
+  const result = joinInvite(inviteId, person.id, new Date(), arrivesAt);
+  if (result === "full" || result === "gone" || result === "arrival") return redirect(`/?error=${result}`, 303);
   return redirect(`/#invite-${inviteId}`, 303);
 };

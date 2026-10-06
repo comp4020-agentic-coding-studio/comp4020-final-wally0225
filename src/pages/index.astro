@@ -1,15 +1,15 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { MAX_HOURS, MAX_SIZE, listPast, listUpcoming } from "../lib/db";
+import { LATE_CUTOFF_MINUTES, MAX_HOURS, MAX_SIZE, arrivalOptions, canJoin, listPast, listUpcoming } from "../lib/db";
 import { currentPerson } from "../lib/identity";
-import { TIME_SLOTS, formatPast, formatWhen, nextStep, toLocalInput } from "../lib/time";
+import { TIME_SLOTS, formatClock, formatPast, formatWhen, nextStep, toLocalInput } from "../lib/time";
 
 const person = currentPerson(Astro.cookies);
 const now = new Date();
 const upcoming = person ? listUpcoming(now) : [];
 const past = person ? listPast(person.id, now) : [];
 const mine = upcoming.filter((i) => i.going.some((g) => g.id === person?.id));
-const open = upcoming.filter((i) => !mine.includes(i));
+const open = upcoming.filter((i) => !mine.includes(i) && canJoin(i, now));
 
 // The form starts on the next five-minute step, running an hour.
 const today = toLocalInput(now).slice(0, 10);
@@ -23,7 +23,8 @@ const errors: Record<string, string> = {
   end: `Pick an end time after the start, at most ${MAX_HOURS} hours later.`,
   size: `A group is between 2 and ${MAX_SIZE} people, you included.`,
   full: "That one filled up just before you joined.",
-  gone: "That one has already started.",
+  gone: "Joining that one has closed.",
+  arrival: `Pick a time to get there at least ${LATE_CUTOFF_MINUTES} minutes before it ends.`,
 };
 const error = errors[Astro.url.searchParams.get("error") ?? ""];
 ---
@@ -61,7 +62,10 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
                     {formatWhen(invite.startsAt, now, invite.endsAt)} · {invite.place}
                   </p>
                   <p>
-                    {invite.going.length} of {invite.size} going: {invite.going.map((g) => g.name).join(", ")}
+                    {invite.going.length} of {invite.size} going:{" "}
+                    {invite.going
+                      .map((g) => (g.arrivesAt ? `${g.name} (from ${formatClock(g.arrivesAt)})` : g.name))
+                      .join(", ")}
                   </p>
                   {invite.hostId !== person.id && (
                     <form method="post" action="/api/join">
@@ -84,6 +88,7 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
             <ul class="invites">
               {open.map((invite) => {
                 const full = invite.going.length >= invite.size;
+                const arrival = arrivalOptions(invite, now);
                 return (
                   <li id={`invite-${invite.id}`} class="invite">
                     <h3>{invite.title}</h3>
@@ -96,8 +101,20 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
                     {full ? (
                       <p class="invite__full">Full</p>
                     ) : (
-                      <form method="post" action="/api/join">
+                      <form method="post" action="/api/join" class="join">
                         <input type="hidden" name="invite" value={invite.id} />
+                        <label>
+                          When can you get there?
+                          <select name="arrival">
+                            {arrival.onTime && <option value="start">On time ({formatClock(invite.startsAt)})</option>}
+                            {arrival.late.map((t) => (
+                              <option value={t.getTime()}>
+                                {formatClock(t)} ({Math.round((t.getTime() - invite.startsAt.getTime()) / 60_000)} min
+                                late)
+                              </option>
+                            ))}
+                          </select>
+                        </label>
                         <button>Join</button>
                       </form>
                     )}

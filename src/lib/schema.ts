@@ -37,7 +37,8 @@ export const invites = sqliteTable("invites", {
     .default(sql`(unixepoch() * 1000)`),
 });
 
-// Who's going. One row per person per invite; the host has one too.
+// Who's going. One row per person per invite; the host has one too, always
+// on time.
 export const joins = sqliteTable(
   "joins",
   {
@@ -47,6 +48,9 @@ export const joins = sqliteTable(
     personId: text("person_id")
       .notNull()
       .references(() => people.id),
+    // when they'll get there, if not at the start: someone finishing a class
+    // can join a game that's already going. Null means on time.
+    arrivesAt: int("arrives_at", { mode: "timestamp_ms" }),
     joinedAt: int("joined_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(unixepoch() * 1000)`),
