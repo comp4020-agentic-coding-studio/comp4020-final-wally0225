@@ -1,0 +1,118 @@
+---
+// Soonest | Nearest for the open invites, and "350 m away" on every card
+// with a spot, once the browser says where you are. Soonest is how the
+// server sends the list; Nearest reorders it on the page, so where you are
+// never leaves your phone. Your own plans stay soonest first: once you've
+// said you're going, when matters more than how far.
+//
+// Always rendered, and hidden when there's nothing to sort, because its
+// script is also what puts the distances on cards.
+interface Props {
+  hidden?: boolean;
+}
+const { hidden = false } = Astro.props;
+---
+
+<div class="sortswitch" role="group" aria-label="Sort open invites" hidden={hidden}>
+  <button type="button" class="sortswitch__button" data-sort-button="soonest" aria-pressed="true">Soonest</button>
+  <button type="button" class="sortswitch__button" data-sort-button="nearest" aria-pressed="false">Nearest</button>
+</div>
+
+<script>
+  import { distanceKm, formatDistance } from "../lib/geo";
+  import { type Spot, locate } from "../lib/locate";
+
+  type Sort = "soonest" | "nearest";
+  let sort: Sort = "soonest";
+  let here: Spot | undefined;
+  let hint = "";
+
+  const remembered = (): string | null => {
+    try {
+      return localStorage.getItem("vybe:sort");
+    } catch {
+      return null;
+    }
+  };
+  const remember = (value: Sort) => {
+    try {
+      localStorage.setItem("vybe:sort", value);
+    } catch {
+      // private window or blocked storage
+    }
+  };
+
+  const spotOf = (card: HTMLElement): Spot | undefined =>
+    card.dataset.lat && card.dataset.lng ? { lat: Number(card.dataset.lat), lng: Number(card.dataset.lng) } : undefined;
+
+  // Everything this switch shows is put back after each live update, since
+  // the update swaps in fresh cards and a fresh switch.
+  function apply() {
+    for (const button of document.querySelectorAll<HTMLButtonElement>("[data-sort-button]")) {
+      button.setAttribute("aria-pressed", String(button.dataset.sortButton === sort));
+      button.title = button.dataset.sortButton === "nearest" ? hint : "";
+    }
+
+    for (const card of document.querySelectorAll<HTMLElement>("[data-live] [data-going]")) {
+      const label = card.querySelector<HTMLElement>("[data-distance]");
+      const spot = spotOf(card);
+      if (!label) continue;
+      label.hidden = !(here && spot);
+      if (here && spot) label.lastChild!.textContent = formatDistance(distanceKm(here, spot));
+    }
+
+    // Nearest first, invites without a spot last; Soonest as the server sent it
+    const list = document.querySelector<HTMLElement>('[data-live="open-invites"] .invites');
+    if (!list) return;
+    const cards = [...list.querySelectorAll<HTMLElement>(":scope > [data-going]")];
+    const key = (card: HTMLElement): number => {
+      if (sort === "soonest" || !here) return Number(card.dataset.starts);
+      const spot = spotOf(card);
+      return spot ? distanceKm(here, spot) : Number.POSITIVE_INFINITY;
+    };
+    cards.sort((a, b) => key(a) - key(b) || Number(a.dataset.starts) - Number(b.dataset.starts));
+    list.append(...cards);
+  }
+
+  // on the page's notice line, the one that says what changed while you were away
+  function say(text: string) {
+    const notice = document.querySelector<HTMLElement>("[data-notice]");
+    if (!notice) return;
+    notice.textContent = text;
+    notice.hidden = false;
+    setTimeout(() => (notice.hidden = true), 6000);
+  }
+
+  async function choose(next: Sort) {
+    if (next === "nearest" && !here) {
+      here = await locate(true);
+      if (!here) {
+        hint = "Nearest needs your location, and your browser didn't share it.";
+        say(hint);
+        next = "soonest";
+      }
+    }
+    sort = next;
+    remember(sort);
+    apply();
+  }
+
+  document.addEventListener("click", (e) => {
+    const button = (e.target as Element).closest<HTMLButtonElement>("[data-sort-button]");
+    if (button) choose(button.dataset.sortButton === "nearest" ? "nearest" : "soonest");
+  });
+  document.addEventListener("vybe:cards", apply);
+  // the map may be the first to ask; once it knows, so does the list
+  document.addEventListener("vybe:located", async () => {
+    here = await locate(false);
+    apply();
+  });
+
+  // a returning visitor who already allowed location gets distances, and
+  // their last sort, without being asked again
+  locate(false).then((spot) => {
+    here = spot;
+    if (here && remembered() === "nearest") sort = "nearest";
+    apply();
+  });
+</script>

@@ -3,6 +3,7 @@ import Avatar from "../components/Avatar.astro";
 import Icon from "../components/Icon.astro";
 import InviteCard from "../components/InviteCard.astro";
 import MapView from "../components/MapView.astro";
+import SortSwitch from "../components/SortSwitch.astro";
 import SpotPicker from "../components/SpotPicker.astro";
 import Layout from "../layouts/Layout.astro";
 import { LATE_CUTOFF_MINUTES, MAX_HOURS, MAX_SIZE, canJoin, listPast, listUpcoming } from "../lib/db";
@@ -100,6 +101,7 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
           <div class="section__head">
             <h2 id="open-invites">Open invites</h2>
             {open.length > 0 && <span class="pill">{open.length}</span>}
+            <SortSwitch hidden={open.length < 2} />
           </div>
           {open.length === 0 ? (
             <p class="empty">No open invites right now. Be the first to post one.</p>

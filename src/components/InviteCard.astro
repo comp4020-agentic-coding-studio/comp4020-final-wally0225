@@ -50,6 +50,10 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
   <ul class="invite__meta">
     <li><Icon name="clock" />{when}</li>
     <li><Icon name="pin" />{invite.place}</li>
+    {/* filled in by the page once it knows where you are: "350 m away" */}
+    {variant !== "past" && invite.lat !== null && (
+      <li class="invite__distance" data-distance hidden><Icon name="walk" /><span /></li>
+    )}
   </ul>
 
   {
