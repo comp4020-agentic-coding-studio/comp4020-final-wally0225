@@ -328,10 +328,87 @@ span.pin--mine {
   display: none;
 }
 
-:root[data-view="map"] .mapview {
+:root[data-view="map"] .mapview,
+:root[data-view="both"] .mapview {
   display: grid;
   gap: 0.5rem;
   margin-top: 0;
+}
+
+/* the list sections (and the map, when it shows) with even gaps */
+.browse {
+  display: grid;
+  row-gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+.browse > .section {
+  margin-top: 0;
+}
+
+/* Laptop: the list on the left, the map beside it, staying in view while
+   the list scrolls */
+@media (min-width: 60rem) {
+  main,
+  .appbar__inner {
+    max-width: 76rem;
+  }
+
+  .browse {
+    grid-template-columns: minmax(0, 30rem) minmax(0, 1fr);
+    column-gap: 2rem;
+    align-items: start;
+  }
+
+  .browse > .section {
+    grid-column: 1;
+  }
+
+  .browse > .mapview {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    position: sticky;
+    top: 5rem;
+  }
+
+  .mapview__map {
+    height: calc(100vh - 8.5rem);
+  }
+}
+
+/* the pin for the card under the pointer */
+.pin--hover {
+  z-index: 1000 !important;
+}
+
+.pin--hover span.pin {
+  transform: scale(1.2);
+  background: var(--accent-2);
+}
+
+span.pin {
+  transition:
+    transform 0.12s ease,
+    background 0.12s ease;
+}
+
+/* "Use my location", styled like Leaflet's own zoom buttons */
+.maplocate {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 2px solid rgb(0 0 0 / 0.2);
+  border-radius: 4px;
+  background: var(--surface);
+  background-clip: padding-box;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.maplocate:hover {
+  background: var(--surface-2);
 }
 
 :root[data-view="map"] [data-live] {
@@ -360,8 +437,9 @@ span.pin--mine {
 .pin-popup .invite {
   box-shadow: none;
   border: 0;
+  background: none;
   padding: 0.25rem;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 /* Leaflet gives popup paragraphs a 1.3em margin; the card spaces itself */
@@ -369,16 +447,6 @@ span.pin--mine {
   margin: 0;
 }
 
-/* the arrival time and Join share one row, so Join is in view without scrolling */
-.pin-popup .join {
-  flex-wrap: nowrap;
-  padding-top: 0.5rem;
-}
-
-.pin-popup .join .field {
-  flex: 1 1 0;
-  min-width: 0;
-}
 
 input,
 select {
@@ -448,6 +516,12 @@ select {
 
 .button--wide {
   width: 100%;
+}
+
+.button--small {
+  min-height: 2.4rem;
+  padding: 0.45rem 1.15rem;
+  font-size: 0.92rem;
 }
 
 .button--ghost {
@@ -623,7 +697,7 @@ select {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .hello__who {
@@ -638,9 +712,30 @@ select {
   font-weight: 750;
 }
 
+/* Post a Vybe and, on phones, List | Map, on one row; the open form takes
+   the full width under them */
+.toolbar {
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.toolbar .viewswitch {
+  position: absolute;
+  top: 0.15rem;
+  right: 0;
+}
+
+:root[data-view] .toolbar .viewswitch {
+  margin: 0;
+}
+
+:root[data-view="both"] .toolbar .viewswitch {
+  display: none;
+}
+
 /* Post a Vybe: collapsed it's the button; open, the form is underneath */
 .post {
-  margin-bottom: 1rem;
+  margin: 0;
 }
 
 .post__toggle {
@@ -664,6 +759,141 @@ select {
 
 .post__form {
   margin-top: 0.75rem;
+}
+
+/* the dialog's title bar; inline on phones the button above says it all */
+.post__head {
+  display: none;
+}
+
+/* Laptop: the form opens as a dialog over the page, fields on the left and
+   a tall map to tap the spot on the right */
+@media (min-width: 60rem) {
+  .post[open]::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: rgb(15 23 42 / 0.45);
+    backdrop-filter: blur(2px);
+    animation: fade-in 0.15s ease-out;
+  }
+
+  .post[open] .post__form {
+    position: fixed;
+    z-index: 21;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(56rem, calc(100vw - 4rem));
+    max-height: calc(100vh - 4rem);
+    overflow: auto;
+    margin: 0;
+    padding: 1.5rem 1.75rem 1.75rem;
+    border-radius: 24px;
+    box-shadow: 0 24px 64px rgb(15 23 42 / 0.25);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    grid-template-areas:
+      "head   head"
+      "what   spot"
+      "where  spot"
+      "when   spot"
+      "size   spot"
+      "submit spot";
+    grid-template-rows: auto auto auto auto auto 1fr;
+    gap: 1rem 1.75rem;
+    animation: pop-in 0.18s ease-out;
+  }
+
+  .post__head {
+    grid-area: head;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .post__head h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 750;
+  }
+
+  .post__close {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 0;
+    border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .post__close:hover {
+    color: var(--ink);
+  }
+
+  .post__close .icon {
+    transform: rotate(45deg);
+  }
+
+  .post__what {
+    grid-area: what;
+  }
+
+  .post__where {
+    grid-area: where;
+  }
+
+  .post__form .when {
+    grid-area: when;
+  }
+
+  .post__size {
+    grid-area: size;
+  }
+
+  .post__submit {
+    grid-area: submit;
+    align-self: end;
+  }
+
+  .post__form .spotpicker {
+    grid-area: spot;
+    grid-template-rows: auto 1fr auto;
+  }
+
+  .post__form .picker {
+    height: auto;
+    min-height: 22rem;
+  }
+
+  /* the page behind stays put while the dialog is open */
+  :root:has(.post[open]) body {
+    overflow: hidden;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .post[open]::before,
+  .post[open] .post__form {
+    animation: none;
+  }
 }
 
 .section {
@@ -700,35 +930,202 @@ select {
 .invite {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 1rem 1.1rem;
+  border-radius: 20px;
+  padding: 1rem;
   box-shadow: var(--shadow);
   display: grid;
-  gap: 0.65rem;
+  gap: 0.75rem;
   scroll-margin-top: 5rem;
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
 }
 
+/* your own plans: a teal edge, so they read as yours at a glance */
 .invite--mine {
   border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: linear-gradient(180deg, var(--accent-soft), var(--surface) 4.5rem);
+}
+
+/* on a laptop, the card under the pointer and its pin light up together */
+.invite--hover {
+  border-color: var(--accent-2);
   box-shadow:
-    inset 4px 0 0 var(--accent),
+    0 0 0 3px color-mix(in srgb, var(--accent-2) 25%, transparent),
     var(--shadow);
+}
+
+/* the calendar block and what, when, where */
+.invite__main {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.datebox {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  width: 3.4rem;
+  height: 3.6rem;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  line-height: 1;
+}
+
+.datebox__top {
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.datebox__day {
+  margin-top: 0.2rem;
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.invite--past .datebox {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.invite__body {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.invite__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.1rem;
+}
+
+.invite__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  flex: none;
+}
+
+.invite__line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.invite__line .icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.invite__place {
+  min-width: 0;
+}
+
+.invite__distance {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.invite__distance[hidden] {
+  display: none;
+}
+
+/* who's going */
+.invite__people {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.avatars {
+  display: flex;
+}
+
+.avatars .avatar + .avatar {
+  margin-left: -0.5rem;
 }
 
 /* the headcount, with "2 others looking" under it (see index.astro) */
 .invite__tally {
   display: grid;
   justify-items: end;
-  gap: 0.1rem;
+  gap: 0.05rem;
+}
+
+.invite__count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink);
 }
 
 .invite__viewers {
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .invite__viewers[hidden] {
   display: none;
+}
+
+.meter {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+/* who posted it (or who's coming) and the one action */
+.invite__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.invite__names {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+  min-width: 0;
+  flex: 1 1 8rem;
 }
 
 /* a card that just changed, briefly, so the eye finds it */
@@ -753,106 +1150,62 @@ select {
 .invite--past {
   background: transparent;
   box-shadow: none;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 .invite--past .invite__title {
   color: var(--muted);
 }
 
-.invite__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.5rem;
+/* Join: one button. When there's a late arrival to choose, it opens "when
+   can you get there?" under the card, and turns into Cancel. */
+.join__more {
+  display: grid;
 }
 
-.invite__title {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-
-.badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.invite__meta {
+.join__more > summary {
   list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem 1.1rem;
+  justify-self: end;
+}
+
+.join__more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.join__cancel,
+.join__more[open] .join__open {
+  display: none;
+}
+
+.join__more[open] .join__cancel {
+  display: inline;
+}
+
+.join__more[open] > summary {
   color: var(--muted);
-  font-size: 0.92rem;
+  background: transparent;
+  border: 1px solid var(--line);
+  box-shadow: none;
 }
 
-.invite__meta li {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.invite__people {
+.join__pick {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.avatars {
-  display: flex;
-}
-
-.avatars .avatar + .avatar {
-  margin-left: -0.5rem;
-}
-
-.invite__count {
-  font-size: 0.85rem;
-  font-weight: 650;
-  color: var(--muted);
-}
-
-.meter {
-  height: 6px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  overflow: hidden;
-}
-
-.meter span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
-}
-
-.invite__names {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--muted);
-}
-
-.invite__actions {
-  margin-top: 0.25rem;
-}
-
-.join {
-  display: flex;
-  flex-wrap: wrap;
   align-items: end;
   gap: 0.6rem;
+  width: 100%;
+  margin-top: 0.75rem;
   padding-top: 0.75rem;
   border-top: 1px solid var(--line);
 }
 
-.join .field {
-  flex: 1 1 13rem;
+.join__pick .field {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* the open picker takes the whole width of the card's footer */
+.invite__foot:has(.join__more[open]) .join {
+  flex: 1 1 100%;
 }
 
 /* --- post form ---------------------------------------------------------------- */

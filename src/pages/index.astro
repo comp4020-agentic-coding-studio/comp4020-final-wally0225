@@ -75,17 +75,25 @@ const postRefused = ["details", "time", "end", "size", "spot"].includes(Astro.ur
           </div>
         </section>
 
+        <div class="toolbar">
         <details class="post" id="post" open={postRefused}>
           <summary class="button post__toggle">
             <Icon name="plus" />
             Post a Vybe
           </summary>
           <form method="post" action="/api/invites" class="stack card post__form">
-            <label class="field">
+            {/* a title and a close button, shown when the form is a dialog (laptops) */}
+            <div class="post__head">
+              <h2>Post a Vybe</h2>
+              <button type="button" class="post__close" aria-label="Close" data-post-close>
+                <Icon name="plus" />
+              </button>
+            </div>
+            <label class="field post__what">
               <span class="field__label">What</span>
               <input name="title" required maxlength="80" placeholder="Pickleball, doubles" />
             </label>
-            <label class="field">
+            <label class="field post__where">
               <span class="field__label">Where</span>
               <input name="place" required maxlength="80" placeholder="ANU Sport courts" />
             </label>
@@ -117,16 +125,24 @@ const postRefused = ["details", "time", "end", "size", "spot"].includes(Astro.ur
                 </select>
               </label>
             </fieldset>
-            <label class="field">
+            <label class="field post__size">
               <span class="field__label">How many people, you included</span>
               <input name="size" type="number" required min="2" max={MAX_SIZE} value="4" />
             </label>
-            <button class="button button--wide">Post Vybe</button>
+            <button class="button button--wide post__submit">Post Vybe</button>
           </form>
         </details>
+        {/* List | Map, on phones; MapView's script drives it */}
+        <div class="viewswitch" role="group" aria-label="Show Vybes as">
+          <button type="button" class="viewswitch__button" data-view-button="list" aria-pressed="true">List</button>
+          <button type="button" class="viewswitch__button" data-view-button="map" aria-pressed="false">Map</button>
+        </div>
+        </div>
 
         <p class="notice" role="status" data-notice hidden />
 
+        {/* on a phone, the list or the map; on a laptop, both side by side */}
+        <div class="browse">
         <MapView />
 
         <section aria-labelledby="your-plans" class="section" data-live="your-plans">
@@ -161,6 +177,7 @@ const postRefused = ["details", "time", "end", "size", "spot"].includes(Astro.ur
             </ul>
           )}
         </section>
+        </div>
 
 
         {past.length > 0 && (
@@ -179,6 +196,28 @@ const postRefused = ["details", "time", "end", "size", "spot"].includes(Astro.ur
     )
   }
 </Layout>
+
+<script>
+  // Post a Vybe as a dialog on laptops: × , Esc, or a click on the backdrop
+  // (the details element itself, outside the form) closes it.
+  const post = document.querySelector<HTMLDetailsElement>("details.post");
+  if (post) {
+    post.querySelector("[data-post-close]")?.addEventListener("click", () => (post.open = false));
+    post.addEventListener("click", (e) => {
+      if (e.target === post) post.open = false;
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && post.open) {
+        post.open = false;
+        post.querySelector("summary")?.focus();
+      }
+    });
+    // straight to the first field when it opens
+    post.addEventListener("toggle", () => {
+      if (post.open) post.querySelector<HTMLInputElement>("input[name=title]")?.focus({ preventScroll: true });
+    });
+  }
+</script>
 
 <script>
   // Live updates: the sections marked data-live are refetched whenever the
@@ -224,10 +263,13 @@ const postRefused = ["details", "time", "end", "size", "spot"].includes(Astro.ur
     const away = returning || document.hidden;
     returning = false;
 
-    // an arrival time already picked stays picked, if the card still offers it
+    // a Join that's been opened stays open, and an arrival time already
+    // picked stays picked, if the card still offers it
     const picked = new Map<string, string>();
-    for (const form of document.querySelectorAll<HTMLFormElement>("form.join")) {
-      picked.set(form.invite.value, form.arrival.value);
+    const opened = new Set<string>();
+    for (const form of document.querySelectorAll<HTMLFormElement>("[data-live] form.join")) {
+      if (form.arrival instanceof HTMLSelectElement) picked.set(form.invite.value, form.arrival.value);
+      if (form.querySelector("details[open]")) opened.add(form.invite.value);
     }
 
     const before = snapshot();
@@ -239,10 +281,14 @@ const postRefused = ["details", "time", "end", "size", "spot"].includes(Astro.ur
     watchCards();
     document.dispatchEvent(new CustomEvent("vybe:cards"));
 
-    for (const form of document.querySelectorAll<HTMLFormElement>("form.join")) {
+    for (const form of document.querySelectorAll<HTMLFormElement>("[data-live] form.join")) {
+      const details = form.querySelector("details");
+      if (details && opened.has(form.invite.value)) details.open = true;
       const arrival = picked.get(form.invite.value);
-      const select = form.arrival as HTMLSelectElement;
-      if (arrival && [...select.options].some((o) => o.value === arrival)) select.value = arrival;
+      const select = form.arrival;
+      if (arrival && select instanceof HTMLSelectElement && [...select.options].some((o) => o.value === arrival)) {
+        select.value = arrival;
+      }
     }
 
     // new, joined, left, or gone (ended, so off the list)
@@ -296,7 +342,10 @@ const postRefused = ["details", "time", "end", "size", "spot"].includes(Astro.ur
   function report() {
     clearTimeout(reportPending);
     if (!stream) return;
-    const showing = document.documentElement.dataset.view === "map" ? onMap : [...onScreen];
+    // on a laptop ("both") the list and the map are both on screen
+    const view = document.documentElement.dataset.view;
+    const showing =
+      view === "map" ? onMap : view === "both" ? [...new Set([...onMap, ...onScreen])] : [...onScreen];
     const invites = document.hidden ? [] : [...showing].sort((a, b) => a - b);
     const body = JSON.stringify({ stream, invites });
     if (body === lastReport) return;

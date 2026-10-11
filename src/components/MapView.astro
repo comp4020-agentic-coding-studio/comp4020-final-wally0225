@@ -1,15 +1,11 @@
 ---
 // "Close enough to just go": the invites on a map, opening on about a
-// kilometre around where you are (or ANU, if the browser can't say). A List |
-// Map switch picks which one the page shows. The pins come from the cards
+// kilometre around where you are (or ANU, if the browser can't say). On a
+// phone the List | Map switch (in index.astro) picks which one the page
+// shows; on a laptop the map sits beside the list. The pins come from the cards
 // already on the page, so a pin always says what its card says, live updates
 // included.
 ---
-
-<div class="viewswitch" role="group" aria-label="Show Vybes as">
-  <button type="button" class="viewswitch__button" data-view-button="list" aria-pressed="true">List</button>
-  <button type="button" class="viewswitch__button" data-view-button="map" aria-pressed="false">Map</button>
-</div>
 
 <section class="section mapview" aria-label="Vybes on a map" data-mapview>
   <div class="mapview__map" data-map></div>
@@ -98,6 +94,8 @@
       pin.on("popupclose", () => {
         if (openSpot === key) openSpot = undefined;
       });
+      pin.on("mouseover", () => cards.forEach((c) => hover(c.id, true)));
+      pin.on("mouseout", () => cards.forEach((c) => hover(c.id, false)));
       pin.addTo(pins);
       placed.push({ pin, ids: cards.map((c) => c.id) });
       // a refresh rebuilds every pin; the one that was open stays open
@@ -124,8 +122,9 @@
   // what this person is looking at on the map: every invite with its pin in
   // view, or nothing while the list is showing
   function reportViewing() {
+    const view = document.documentElement.dataset.view;
     const ids =
-      map && document.documentElement.dataset.view === "map"
+      map && (view === "map" || view === "both")
         ? placed
             .filter(({ pin }) => map!.getBounds().contains(pin.getLatLng()))
             .flatMap(({ ids }) => ids.map((id) => Number(id.replace("invite-", ""))))
@@ -172,7 +171,22 @@
     you.setLatLng([spot.lat, spot.lng]);
   }
 
-  async function openMap() {
+  // Asking for location happens when someone chooses the map (the phone's
+  // Map button, or "Use my location" on the map), never just because the
+  // page loaded with the map showing, as it does on a laptop.
+  async function findYou(ask: boolean) {
+    const spot = await locate(ask);
+    if (spot) {
+      onAnu = false;
+      frame(spot);
+      showYou(spot);
+    } else {
+      onAnu = ask;
+      countInView();
+    }
+  }
+
+  async function openMap(ask: boolean) {
     if (map) {
       // Leaflet measures its box when it's created, and it was hidden
       map.invalidateSize();
@@ -190,23 +204,58 @@
     });
     frame(ANU);
     placePins();
+    addLocateButton();
+    await findYou(ask);
+  }
 
-    const spot = await locate(true);
-    if (spot) {
-      frame(spot);
-      showYou(spot);
-    } else {
-      onAnu = true;
-      countInView();
-    }
+  // a "Use my location" button on the map, under the zoom buttons
+  function addLocateButton() {
+    const Locate = L.Control.extend({
+      onAdd() {
+        const button = L.DomUtil.create("button", "maplocate");
+        button.type = "button";
+        button.title = "Use my location";
+        button.setAttribute("aria-label", "Use my location");
+        button.innerHTML =
+          '<svg viewBox="0 0 24 24" class="icon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
+        L.DomEvent.disableClickPropagation(button);
+        L.DomEvent.on(button, "click", () => findYou(true));
+        return button;
+      },
+    });
+    new Locate({ position: "topleft" }).addTo(map!);
+  }
+
+  // On a laptop, a card under the pointer and its pin light up together,
+  // either way round.
+  function pinFor(cardId: string) {
+    return placed.find(({ ids }) => ids.includes(cardId))?.pin.getElement();
+  }
+
+  function hover(cardId: string, on: boolean) {
+    document.getElementById(cardId)?.classList.toggle("invite--hover", on);
+    pinFor(cardId)?.classList.toggle("pin--hover", on);
   }
 
   function show(view: "list" | "map") {
     document.documentElement.dataset.view = view;
     for (const button of buttons) button.setAttribute("aria-pressed", String(button.dataset.viewButton === view));
     remember(view);
-    if (view === "map") openMap();
+    if (view === "map") openMap(true);
     reportViewing();
+  }
+
+  // Wide enough for both: the list and the map side by side ("both"), and
+  // the switch is hidden. Narrower: whichever this device last chose.
+  const wide = window.matchMedia("(min-width: 60rem)");
+  function fit() {
+    if (wide.matches) {
+      document.documentElement.dataset.view = "both";
+      openMap(false);
+      reportViewing();
+    } else {
+      show(remembered() === "map" ? "map" : "list");
+    }
   }
 
   if (box) {
@@ -222,6 +271,15 @@
       counts = (e as CustomEvent<Record<string, number>>).detail;
       showLooking();
     });
-    show(remembered() === "map" ? "map" : "list");
+    document.addEventListener("mouseover", (e) => {
+      const card = (e.target as Element).closest<HTMLElement>("[data-live] [data-going]");
+      if (card) hover(card.id, true);
+    });
+    document.addEventListener("mouseout", (e) => {
+      const card = (e.target as Element).closest<HTMLElement>("[data-live] [data-going]");
+      if (card && !card.contains(e.relatedTarget as Node)) hover(card.id, false);
+    });
+    wide.addEventListener("change", fit);
+    fit();
   }
 </script>

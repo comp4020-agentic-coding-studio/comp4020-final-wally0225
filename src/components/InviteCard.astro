@@ -1,11 +1,12 @@
 ---
 import { type InviteView, arrivalOptions } from "../lib/db";
-import { formatClock, formatPast, formatWhen } from "../lib/time";
+import { dateBlock, formatClock, formatTimes } from "../lib/time";
 import Avatar from "./Avatar.astro";
 import Icon from "./Icon.astro";
 
-// One invite, as it appears in "Your plans" (mine), "Open invites" (open) or
-// "Past plans" (past).
+// One Vybe, as it appears in "Your plans" (mine), "Open Vybes" (open) or
+// "Past plans" (past): a calendar block, what, when and where, who's going,
+// and one Join button.
 interface Props {
   invite: InviteView;
   now: Date;
@@ -21,11 +22,11 @@ const started = invite.startsAt <= now;
 const soon = !started && invite.startsAt.getTime() - now.getTime() < 60 * 60_000;
 const hosting = invite.hostId === personId;
 const arrival = variant === "open" && !full ? arrivalOptions(invite, now) : undefined;
-const when =
-  variant === "past"
-    ? formatPast(invite.startsAt, now, invite.endsAt)
-    : formatWhen(invite.startsAt, now, invite.endsAt);
-const faces = invite.going.slice(0, 5);
+// only ask when they'll get there if there's a choice to make
+const onlyOnTime = arrival?.onTime && arrival.late.length === 0;
+const block = dateBlock(invite.startsAt, now);
+const when = variant === "past" ? formatClock(invite.startsAt) : formatTimes(invite.startsAt, now, invite.endsAt);
+const faces = invite.going.slice(0, 4);
 const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTime()) / 60_000);
 ---
 
@@ -37,24 +38,31 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
   data-lng={variant === "past" ? undefined : invite.lng}
   data-starts={variant === "past" ? undefined : invite.startsAt.getTime()}
 >
-  <div class="invite__head">
-    <h3 class="invite__title">{invite.title}</h3>
-    <div class="badges">
-      {variant !== "past" && started && <span class="badge badge--live">Happening now</span>}
-      {variant !== "past" && soon && <span class="badge badge--soon">Starting soon</span>}
-      {variant === "mine" && <span class="badge badge--mine">{hosting ? "Hosting" : "Going"}</span>}
-      {variant === "open" && full && <span class="badge">Full</span>}
+  <div class="invite__main">
+    <div class="datebox" aria-hidden="true">
+      <span class="datebox__top">{block.top}</span>
+      <span class="datebox__day">{block.day}</span>
+    </div>
+    <div class="invite__body">
+      <div class="invite__head">
+        <h3 class="invite__title">{invite.title}</h3>
+        <div class="badges">
+          {variant !== "past" && started && <span class="badge badge--live">Now</span>}
+          {variant !== "past" && soon && <span class="badge badge--soon">Soon</span>}
+          {variant === "mine" && <span class="badge badge--mine">{hosting ? "Hosting" : "Going"}</span>}
+          {variant === "open" && full && <span class="badge">Full</span>}
+        </div>
+      </div>
+      <p class="invite__line"><Icon name="clock" />{when}</p>
+      <p class="invite__line">
+        <Icon name="pin" /><span class="invite__place">{invite.place}</span>
+        {/* filled in by the page once it knows where you are: "350 m away" */}
+        {variant !== "past" && invite.lat !== null && (
+          <span class="invite__distance" data-distance hidden><Icon name="walk" /><span /></span>
+        )}
+      </p>
     </div>
   </div>
-
-  <ul class="invite__meta">
-    <li><Icon name="clock" />{when}</li>
-    <li><Icon name="pin" />{invite.place}</li>
-    {/* filled in by the page once it knows where you are: "350 m away" */}
-    {variant !== "past" && invite.lat !== null && (
-      <li class="invite__distance" data-distance hidden><Icon name="walk" /><span /></li>
-    )}
-  </ul>
 
   {
     variant === "past" ? (
@@ -83,42 +91,64 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
         <div class="meter" aria-hidden="true">
           <span style={`width: ${Math.min(100, (count / invite.size) * 100)}%`} />
         </div>
-        <p class="invite__names">
-          {variant === "mine"
-            ? invite.going.map((g) => (g.arrivesAt ? `${g.name} (from ${formatClock(g.arrivesAt)})` : g.name)).join(", ")
-            : `Posted by ${invite.host}`}
-        </p>
       </>
     )
   }
 
   {
-    variant === "mine" && !hosting && (
-      <form method="post" action="/api/join" class="invite__actions">
-        <input type="hidden" name="invite" value={invite.id} />
-        <input type="hidden" name="action" value="leave" />
-        <button class="button button--ghost">Leave</button>
-      </form>
+    variant === "mine" && (
+      <div class="invite__foot">
+        <p class="invite__names">
+          {invite.going.map((g) => (g.arrivesAt ? `${g.name} (from ${formatClock(g.arrivesAt)})` : g.name)).join(", ")}
+        </p>
+        {!hosting && (
+          <form method="post" action="/api/join">
+            <input type="hidden" name="invite" value={invite.id} />
+            <input type="hidden" name="action" value="leave" />
+            <button class="button button--ghost button--small">Leave</button>
+          </form>
+        )}
+      </div>
     )
   }
 
   {
-    arrival && (
-      <form method="post" action="/api/join" class="invite__actions join">
-        <input type="hidden" name="invite" value={invite.id} />
-        <label class="field">
-          <span class="field__label">When can you get there?</span>
-          <select name="arrival">
-            {arrival.onTime && <option value="start">On time ({formatClock(invite.startsAt)})</option>}
-            {arrival.late.map((t) => (
-              <option value={t.getTime()}>
-                {formatClock(t)} ({minutesLate(t)} min late)
-              </option>
-            ))}
-          </select>
-        </label>
-        <button class="button">Join</button>
-      </form>
+    variant === "open" && (
+      <div class="invite__foot">
+        <p class="invite__names">Posted by {invite.host}</p>
+        {arrival &&
+          (onlyOnTime ? (
+            <form method="post" action="/api/join" class="join">
+              <input type="hidden" name="invite" value={invite.id} />
+              <input type="hidden" name="arrival" value="start" />
+              <button class="button button--small">Join</button>
+            </form>
+          ) : (
+            <form method="post" action="/api/join" class="join">
+              <input type="hidden" name="invite" value={invite.id} />
+              <details class="join__more">
+                <summary class="button button--small">
+                  <span class="join__open">Join</span>
+                  <span class="join__cancel">Cancel</span>
+                </summary>
+                <div class="join__pick">
+                  <label class="field">
+                    <span class="field__label">When can you get there?</span>
+                    <select name="arrival">
+                      {arrival.onTime && <option value="start">On time ({formatClock(invite.startsAt)})</option>}
+                      {arrival.late.map((t) => (
+                        <option value={t.getTime()}>
+                          {formatClock(t)} ({minutesLate(t)} min late)
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button class="button">Confirm</button>
+                </div>
+              </details>
+            </form>
+          ))}
+      </div>
     )
   }
 </li>
