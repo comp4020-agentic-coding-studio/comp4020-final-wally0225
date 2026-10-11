@@ -361,6 +361,23 @@ span.pin--mine {
   box-shadow: none;
   border: 0;
   padding: 0.25rem;
+  gap: 0.5rem;
+}
+
+/* Leaflet gives popup paragraphs a 1.3em margin; the card spaces itself */
+.pin-popup .leaflet-popup-content p {
+  margin: 0;
+}
+
+/* the arrival time and Join share one row, so Join is in view without scrolling */
+.pin-popup .join {
+  flex-wrap: nowrap;
+  padding-top: 0.5rem;
+}
+
+.pin-popup .join .field {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 input,
