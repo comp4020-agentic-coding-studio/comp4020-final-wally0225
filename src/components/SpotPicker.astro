@@ -29,6 +29,10 @@
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
 
+    // the form starts collapsed, and Leaflet measures its box when it's
+    // created, so it measures again once the form opens
+    box.closest("details")?.addEventListener("toggle", () => map.invalidateSize());
+
     let pin: L.CircleMarker | undefined;
     map.on("click", (e) => {
       lat.value = e.latlng.lat.toFixed(6);

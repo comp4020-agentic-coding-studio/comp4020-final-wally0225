@@ -34,6 +34,8 @@ const errors: Record<string, string> = {
   arrival: `Pick a time to get there at least ${LATE_CUTOFF_MINUTES} minutes before it ends.`,
 };
 const error = errors[Astro.url.searchParams.get("error") ?? ""];
+// a refused post opens the form again, so the reason is next to what to fix
+const postRefused = ["details", "time", "end", "size", "spot"].includes(Astro.url.searchParams.get("error") ?? "");
 ---
 
 <Layout title="Vybe" active="invites">
@@ -71,52 +73,14 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
               <p class="muted">What do you feel like doing?</p>
             </div>
           </div>
-          <a class="button" href="#post">
+        </section>
+
+        <details class="post" id="post" open={postRefused}>
+          <summary class="button post__toggle">
             <Icon name="plus" />
             Post a Vybe
-          </a>
-        </section>
-
-        <p class="notice" role="status" data-notice hidden />
-
-        <MapView />
-
-        <section aria-labelledby="your-plans" class="section" data-live="your-plans">
-          <div class="section__head">
-            <h2 id="your-plans">Your plans</h2>
-            {mine.length > 0 && <span class="pill">{mine.length}</span>}
-          </div>
-          {mine.length === 0 ? (
-            <p class="empty">Nothing yet. Join something below, or post your own.</p>
-          ) : (
-            <ul class="invites">
-              {mine.map((invite) => (
-                <InviteCard invite={invite} now={now} personId={person.id} variant="mine" />
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section aria-labelledby="open-invites" class="section" data-live="open-invites">
-          <div class="section__head">
-            <h2 id="open-invites">Open Vybes</h2>
-            {open.length > 0 && <span class="pill">{open.length}</span>}
-            <SortSwitch hidden={open.length < 2} />
-          </div>
-          {open.length === 0 ? (
-            <p class="empty">No open Vybes right now. Be the first to post one.</p>
-          ) : (
-            <ul class="invites">
-              {open.map((invite) => (
-                <InviteCard invite={invite} now={now} personId={person.id} variant="open" />
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section aria-labelledby="post" class="section card">
-          <h2 id="post">Post a Vybe</h2>
-          <form method="post" action="/api/invites" class="stack">
+          </summary>
+          <form method="post" action="/api/invites" class="stack card post__form">
             <label class="field">
               <span class="field__label">What</span>
               <input name="title" required maxlength="80" placeholder="Pickleball, doubles" />
@@ -159,7 +123,45 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
             </label>
             <button class="button button--wide">Post Vybe</button>
           </form>
+        </details>
+
+        <p class="notice" role="status" data-notice hidden />
+
+        <MapView />
+
+        <section aria-labelledby="your-plans" class="section" data-live="your-plans">
+          <div class="section__head">
+            <h2 id="your-plans">Your plans</h2>
+            {mine.length > 0 && <span class="pill">{mine.length}</span>}
+          </div>
+          {mine.length === 0 ? (
+            <p class="empty">Nothing yet. Join something below, or post your own.</p>
+          ) : (
+            <ul class="invites">
+              {mine.map((invite) => (
+                <InviteCard invite={invite} now={now} personId={person.id} variant="mine" />
+              ))}
+            </ul>
+          )}
         </section>
+
+        <section aria-labelledby="open-invites" class="section" data-live="open-invites">
+          <div class="section__head">
+            <h2 id="open-invites">Open Vybes</h2>
+            {open.length > 0 && <span class="pill">{open.length}</span>}
+            <SortSwitch hidden={open.length < 2} />
+          </div>
+          {open.length === 0 ? (
+            <p class="empty">No open Vybes right now. Be the first to post one.</p>
+          ) : (
+            <ul class="invites">
+              {open.map((invite) => (
+                <InviteCard invite={invite} now={now} personId={person.id} variant="open" />
+              ))}
+            </ul>
+          )}
+        </section>
+
 
         {past.length > 0 && (
           <section aria-labelledby="past-plans" class="section">

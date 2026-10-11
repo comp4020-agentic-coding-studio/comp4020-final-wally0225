@@ -638,6 +638,34 @@ select {
   font-weight: 750;
 }
 
+/* Post a Vybe: collapsed it's the button; open, the form is underneath */
+.post {
+  margin-bottom: 1rem;
+}
+
+.post__toggle {
+  list-style: none;
+  width: fit-content;
+  user-select: none;
+}
+
+.post__toggle::-webkit-details-marker {
+  display: none;
+}
+
+.post__toggle .icon {
+  transition: transform 0.15s ease;
+}
+
+/* the plus turns into a close cross while the form is open */
+.post[open] .post__toggle .icon {
+  transform: rotate(45deg);
+}
+
+.post__form {
+  margin-top: 0.75rem;
+}
+
 .section {
   margin-top: 2rem;
 }
