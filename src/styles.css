@@ -233,6 +233,27 @@ span.pin--mine {
   background: var(--soon);
 }
 
+/* how many others are looking, on the pin's corner */
+.pin__looking {
+  position: absolute;
+  top: -8px;
+  right: -12px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: 0.7rem;
+  font-weight: 750;
+  line-height: 18px;
+  text-align: center;
+}
+
+.pin__looking[hidden] {
+  display: none;
+}
+
 /* List | Map: only once the page's script is running, since the map needs it */
 .viewswitch {
   display: none;

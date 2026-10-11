@@ -29,7 +29,9 @@
   let map: L.Map | undefined;
   const pins = L.layerGroup();
   // each pin and how many invites it stands for, for "N invites in this area"
-  let placed: { pin: L.Marker; invites: number }[] = [];
+  let placed: { pin: L.Marker; ids: string[] }[] = [];
+  // how many others are looking at each invite, from the live stream
+  let counts: Record<string, number> = {};
   let you: L.CircleMarker | undefined;
   // the spot whose popup is open, so a live refresh can reopen it
   let openSpot: string | undefined;
@@ -76,7 +78,9 @@
       const mine = cards.some((card) => card.classList.contains("invite--mine"));
       const icon = L.divIcon({
         className: "",
-        html: `<span class="pin${mine ? " pin--mine" : ""}">${cards.length > 1 ? cards.length : ""}</span>`,
+        html:
+          `<span class="pin${mine ? " pin--mine" : ""}">${cards.length > 1 ? cards.length : ""}</span>` +
+          `<span class="pin__looking" hidden></span>`,
         iconSize: [28, 28],
       });
       const pin = L.marker([lat, lng], { icon, keyboard: true, title: cards.map((c) => titleOf(c)).join(", ") });
@@ -95,11 +99,38 @@
         if (openSpot === key) openSpot = undefined;
       });
       pin.addTo(pins);
-      placed.push({ pin, invites: cards.length });
+      placed.push({ pin, ids: cards.map((c) => c.id) });
       // a refresh rebuilds every pin; the one that was open stays open
       if (openSpot === key) pin.openPopup();
     }
+    showLooking();
     countInView();
+  }
+
+  // The badge on each pin: how many others are looking. A pin for several
+  // invites shows the most for any one of them: someone with that pin in view
+  // is looking at all of them, so adding them up would count them twice.
+  function showLooking() {
+    for (const { pin, ids } of placed) {
+      const badge = pin.getElement()?.querySelector<HTMLElement>(".pin__looking");
+      if (!badge) continue;
+      const others = Math.max(0, ...ids.map((id) => counts[id.replace("invite-", "")] ?? 0));
+      badge.hidden = others === 0;
+      badge.textContent = String(others);
+      badge.title = `${others} ${others === 1 ? "other" : "others"} looking`;
+    }
+  }
+
+  // what this person is looking at on the map: every invite with its pin in
+  // view, or nothing while the list is showing
+  function reportViewing() {
+    const ids =
+      map && document.documentElement.dataset.view === "map"
+        ? placed
+            .filter(({ pin }) => map!.getBounds().contains(pin.getLatLng()))
+            .flatMap(({ ids }) => ids.map((id) => Number(id.replace("invite-", ""))))
+        : [];
+    document.dispatchEvent(new CustomEvent("vybe:map-viewing", { detail: ids }));
   }
 
   const titleOf = (card: HTMLElement) => card.querySelector(".invite__title")?.textContent ?? "Invite";
@@ -112,6 +143,8 @@
     for (const id of ids) {
       const card = document.getElementById(id)!.cloneNode(true) as HTMLElement;
       card.removeAttribute("id");
+      // so the live counts can find the copy (see showCounts in index.astro)
+      card.dataset.invite = id;
       card.classList.remove("invite--changed");
       list.append(card);
     }
@@ -121,7 +154,7 @@
   function countInView() {
     if (!map || !status) return;
     const bounds = map.getBounds();
-    const n = placed.filter(({ pin }) => bounds.contains(pin.getLatLng())).reduce((sum, p) => sum + p.invites, 0);
+    const n = placed.filter(({ pin }) => bounds.contains(pin.getLatLng())).reduce((sum, p) => sum + p.ids.length, 0);
     status.textContent =
       (n === 0 ? "No invites in this area. Zoom out to see more." : `${n} ${n === 1 ? "invite" : "invites"} in this area.`) +
       (onAnu ? " Starting from ANU, since your location isn't available." : "");
@@ -151,7 +184,10 @@
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(map);
     pins.addTo(map);
-    map.on("moveend", countInView);
+    map.on("moveend", () => {
+      countInView();
+      reportViewing();
+    });
     frame(ANU);
     placePins();
 
@@ -170,6 +206,7 @@
     for (const button of buttons) button.setAttribute("aria-pressed", String(button.dataset.viewButton === view));
     remember(view);
     if (view === "map") openMap();
+    reportViewing();
   }
 
   if (box) {
@@ -177,7 +214,14 @@
       button.addEventListener("click", () => show(button.dataset.viewButton === "map" ? "map" : "list"));
     }
     // the page swapped in fresh cards (see the live updates in index.astro)
-    document.addEventListener("vybe:cards", placePins);
+    document.addEventListener("vybe:cards", () => {
+      placePins();
+      reportViewing();
+    });
+    document.addEventListener("vybe:viewers", (e) => {
+      counts = (e as CustomEvent<Record<string, number>>).detail;
+      showLooking();
+    });
     show(remembered() === "map" ? "map" : "list");
   }
 </script>

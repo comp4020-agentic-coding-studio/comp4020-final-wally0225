@@ -279,19 +279,23 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
   }
 
   // The viewer count: a card at least half on screen counts this person as
-  // looking. The page tells the server which cards those are, and shows on
-  // each card how many others are looking at it, never who. A hidden tab or
-  // a locked phone isn't looking at anything.
+  // looking, and on the map, a pin inside the visible area does. The page
+  // tells the server which invites those are, and shows on each card (and
+  // pin) how many others are looking at it, never who. A hidden tab or a
+  // locked phone isn't looking at anything.
   let stream: string | undefined;
   let counts: Record<string, number> = {};
   const onScreen = new Set<number>();
+  // the invites whose pins are in view, from the map (see MapView.astro)
+  let onMap: number[] = [];
   let lastReport = "";
   let reportPending: number | undefined;
 
   function report() {
     clearTimeout(reportPending);
     if (!stream) return;
-    const invites = document.hidden ? [] : [...onScreen].sort((a, b) => a - b);
+    const showing = document.documentElement.dataset.view === "map" ? onMap : [...onScreen];
+    const invites = document.hidden ? [] : [...showing].sort((a, b) => a - b);
     const body = JSON.stringify({ stream, invites });
     if (body === lastReport) return;
     lastReport = body;
@@ -326,14 +330,17 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
     showCounts();
   }
 
+  // on the cards in the list, the copies in an open map popup (which carry
+  // the invite they copy as data-invite), and the pins
   function showCounts() {
-    for (const card of document.querySelectorAll<HTMLElement>("[data-live] [data-going]")) {
+    for (const card of document.querySelectorAll<HTMLElement>("[data-live] [data-going], [data-invite]")) {
       const label = card.querySelector<HTMLElement>("[data-viewers]");
       if (!label) continue;
-      const others = counts[card.id.replace("invite-", "")] ?? 0;
+      const others = counts[(card.id || card.dataset.invite!).replace("invite-", "")] ?? 0;
       label.hidden = others === 0;
       label.textContent = `${others} ${others === 1 ? "other" : "others"} looking`;
     }
+    document.dispatchEvent(new CustomEvent("vybe:viewers", { detail: counts }));
   }
 
   if (live().length > 0) {
@@ -361,6 +368,11 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
     events.addEventListener("viewers", (e) => {
       counts = JSON.parse(e.data);
       showCounts();
+    });
+    // the map says which pins are in view as you pan, zoom and switch views
+    document.addEventListener("vybe:map-viewing", (e) => {
+      onMap = (e as CustomEvent<number[]>).detail;
+      reportSoon();
     });
     watchCards();
     // the first open is the page loading; any later one is a reconnect, and
