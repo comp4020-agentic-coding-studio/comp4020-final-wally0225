@@ -50,9 +50,12 @@ export function soon(minutes: number): { date: string; startTime: string; endTim
   return { date: `${s.year}-${s.month}-${s.day}`, startTime: `${s.hour}:${s.minute}`, endTime: `${e.hour}:${e.minute}` };
 }
 
+// A spot on ANU's Acton campus, as the post form's map sends it.
+export const ANU = { lat: "-35.2777", lng: "149.1185" };
+
 // Posts an invite as `host` and returns its id, from where posting lands.
 export async function postInvite(host: string, title: string, size: number): Promise<string | undefined> {
-  const res = await post("/api/invites", { title, place: "Nowhere", ...soon(5), size: String(size) }, host);
+  const res = await post("/api/invites", { title, place: "Nowhere", ...soon(5), size: String(size), ...ANU }, host);
   return res.headers.get("location")?.match(/#invite-(\d+)$/)?.[1];
 }
 
