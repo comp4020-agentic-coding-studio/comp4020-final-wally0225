@@ -20,11 +20,13 @@ Good means a student can find something to do with other people, today or later 
 - **Full means full**, even if two people press Join at the same moment.
   *Checked* in `spec/full-means-full.test.ts`.
 - **Every invite says what, where and when.** Enforced by the app; a check in `spec/` is next.
-- **When you post doesn't matter.** In 30 minutes or tomorrow, if you're free, join. One list, soonest first.
+- **When you post doesn't matter.** In 30 minutes or tomorrow, if you're free, join. One list, soonest first, or nearest first if you choose.
 - **Late is fine, within reason.** Classes run over, so you can join something already going if you'll arrive an hour before it ends; everyone sees "from 5:30 pm" by your name. Enforced by the app.
 - **Dead plans disappear, but your trace doesn't.** Invites nobody can make leave the list; people who went keep them in past plans. Enforced by the app.
 - **Joining isn't awkward.** What you do on the list stays private. An invite shows how many others are looking, to encourage people to join, but never who, and there's no public "no".
   *Checked* in `spec/viewer-count.test.ts`.
+- **Close enough to just go.** Open the map and see what's on near you, starting a short walk away (about 1 km), and zoom out for more. Where you are stays on your phone.
+  *Checked* in `spec/every-invite-has-a-spot.test.ts`.
 - **It can lead to friends.** Past plans show who you went with, so you can find the same people again.
 
 ## What I read

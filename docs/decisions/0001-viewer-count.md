@@ -33,6 +33,7 @@ On who sees it, I also weighed showing it to joiners only, the host only, or eve
 Option 3, shown to everyone, the host included:
 
 - A card at least half on screen, in a tab that isn't hidden, counts the person looking at it, even if they're scrolling past, because it's still on their screen.
+- On the map (added after crit 9), every invite whose pin is in view counts the same way: it's on their screen just as a card is. A pin for several invites at one spot shows the most for any one of them, so nobody is counted twice.
 - One person counts once, however many devices they have open.
 - You never count yourself: the label says "1 other looking", "2 others looking".
 - Zero isn't shown.
