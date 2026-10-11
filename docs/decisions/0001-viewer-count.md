@@ -12,7 +12,7 @@ An invite with no sign of anyone around feels dead, and people wait to see if so
 
 From the README's "What good means here":
 
-- **Joining isn't awkward.** Nobody sees who looked and didn't join. "Who" here means names: what someone else does on the list stays private.
+- **Joining isn't awkward.** What you do on the list stays private. Until this decision the README said "nobody sees who looked and didn't join"; "who" there meant names, and the README now says so: a count of others looking, never who.
 - **Find something to do with other people.** Anything that gets people to join sooner helps.
 - **Trust it will happen as shown.** The going count is the promise; anything shown next to it shouldn't change what it means.
 
