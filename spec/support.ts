@@ -1,4 +1,4 @@
-import { inject } from "vitest";
+import { expect, inject } from "vitest";
 
 // What the checks in spec/ share: talking to the RUNNING app as one or more
 // people. Not a test itself, so vitest doesn't run it.
@@ -54,4 +54,68 @@ export function soon(minutes: number): { date: string; startTime: string; endTim
 export async function postInvite(host: string, title: string, size: number): Promise<string | undefined> {
   const res = await post("/api/invites", { title, place: "Nowhere", ...soon(5), size: String(size) }, host);
   return res.headers.get("location")?.match(/#invite-(\d+)$/)?.[1];
+}
+
+// How soon a change has to reach other open pages: about a second, plus a
+// round trip to the deployed app.
+export const WITHIN_MS = 1500;
+
+// An open page's live stream (/api/events): every event the server has sent
+// it so far, as raw blocks. Comment lines (":", the keep-alive heartbeat)
+// aren't events.
+export type Stream = { events: string[]; close: () => void };
+const open: Stream[] = [];
+
+// For afterEach: closes every stream a test opened.
+export function closeStreams() {
+  open.splice(0).forEach((s) => s.close());
+}
+
+// One open session listening as `cookie`.
+export async function listen(cookie: string): Promise<Stream> {
+  const abort = new AbortController();
+  const res = await fetch(new URL("/api/events", baseUrl), { headers: { cookie }, signal: abort.signal });
+  expect(res.status).toBe(200);
+  expect(res.headers.get("content-type")).toMatch(/^text\/event-stream/);
+
+  const stream: Stream = { events: [], close: () => abort.abort() };
+  open.push(stream);
+  void (async () => {
+    const decoder = new TextDecoder();
+    let buffer = "";
+    try {
+      for await (const chunk of res.body!) {
+        buffer += decoder.decode(chunk, { stream: true });
+        let end;
+        while ((end = buffer.indexOf("\n\n")) >= 0) {
+          const block = buffer.slice(0, end);
+          buffer = buffer.slice(end + 2);
+          if (block.split("\n").some((line) => !line.startsWith(":"))) stream.events.push(block);
+        }
+      }
+    } catch {
+      // closed by the test
+    }
+  })();
+
+  // let anything the server sends on connect arrive first, so it isn't
+  // mistaken for the change under test
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  return stream;
+}
+
+// An event's name and its data, parsed as JSON: "event: change" with
+// "data: {...}" gives ["change", {...}].
+export function parse(event: string): [string, unknown] {
+  const lines = event.split("\n");
+  const name = lines.find((l) => l.startsWith("event:"))?.slice(6).trim() ?? "message";
+  const data = lines
+    .filter((l) => l.startsWith("data:"))
+    .map((l) => l.slice(5).trim())
+    .join("\n");
+  try {
+    return [name, JSON.parse(data)];
+  } catch {
+    return [name, data];
+  }
 }

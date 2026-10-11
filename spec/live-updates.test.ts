@@ -1,5 +1,5 @@
 import { afterEach, expect, it } from "vitest";
-import { baseUrl, person, post, postInvite } from "./support";
+import { type Stream, WITHIN_MS, baseUrl, closeStreams, listen, person, post, postInvite } from "./support";
 
 // "A change by one user shows in every other open session within about a
 // second, with no reload" (crit 9 spec). An open page keeps a live stream at
@@ -7,46 +7,7 @@ import { baseUrl, person, post, postInvite } from "./support";
 // the list changed. This checks the stream end: the page's own script swapping
 // in the update is checked by hand, on two phones.
 
-// About a second, plus a round trip to the deployed app.
-const WITHIN_MS = 1500;
-
-type Stream = { events: string[]; close: () => void };
-const open: Stream[] = [];
-afterEach(() => open.splice(0).forEach((s) => s.close()));
-
-// One open session listening as `cookie`. Collects every event the server
-// sends; comment lines (":", the keep-alive heartbeat) aren't events.
-async function listen(cookie: string): Promise<Stream> {
-  const abort = new AbortController();
-  const res = await fetch(new URL("/api/events", baseUrl), { headers: { cookie }, signal: abort.signal });
-  expect(res.status).toBe(200);
-  expect(res.headers.get("content-type")).toMatch(/^text\/event-stream/);
-
-  const stream: Stream = { events: [], close: () => abort.abort() };
-  open.push(stream);
-  void (async () => {
-    const decoder = new TextDecoder();
-    let buffer = "";
-    try {
-      for await (const chunk of res.body!) {
-        buffer += decoder.decode(chunk, { stream: true });
-        let end;
-        while ((end = buffer.indexOf("\n\n")) >= 0) {
-          const block = buffer.slice(0, end);
-          buffer = buffer.slice(end + 2);
-          if (block.split("\n").some((line) => !line.startsWith(":"))) stream.events.push(block);
-        }
-      }
-    } catch {
-      // closed by the test
-    }
-  })();
-
-  // let anything the server sends on connect arrive first, so it isn't
-  // mistaken for the change under test
-  await new Promise((resolve) => setTimeout(resolve, 300));
-  return stream;
-}
+afterEach(closeStreams);
 
 // Resolves once an event after the first `seen` names the invite `id()`
 // returns, or fails after WITHIN_MS. Other checks run alongside this one and
