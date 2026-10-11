@@ -11,7 +11,7 @@ Why not just ask in a big group chat? Because it fails in four ways:
 - **Nobody can see who's in**, because replies are scattered.
 - **People forget when and where**, because the details scrolled away.
 
-On Vybe an invite is something you post, not a question you ask in public. It stays on the list, shows who's going, and always has a what, where and when.
+A Vybe is something you post, not a question you ask in public. It stays on the list, shows who's going, and always has a what, where and when.
 
 ## What good means here
 
@@ -19,11 +19,11 @@ Good means a student can find something to do with other people, today or later 
 
 - **Full means full**, even if two people press Join at the same moment.
   *Checked* in `spec/full-means-full.test.ts`.
-- **Every invite says what, where and when.** Enforced by the app; a check in `spec/` is next.
+- **Every Vybe says what, where and when.** Enforced by the app; a check in `spec/` is next.
 - **When you post doesn't matter.** In 30 minutes or tomorrow, if you're free, join. One list, soonest first, or nearest first if you choose.
 - **Late is fine, within reason.** Classes run over, so you can join something already going if you'll arrive an hour before it ends; everyone sees "from 5:30 pm" by your name. Enforced by the app.
-- **Dead plans disappear, but your trace doesn't.** Invites nobody can make leave the list; people who went keep them in past plans. Enforced by the app.
-- **Joining isn't awkward.** What you do on the list stays private. An invite shows how many others are looking, to encourage people to join, but never who, and there's no public "no".
+- **Dead plans disappear, but your trace doesn't.** Vybes nobody can make leave the list; people who went keep them in past plans. Enforced by the app.
+- **Joining isn't awkward.** What you do on the list stays private. A Vybe shows how many others are looking, to encourage people to join, but never who, and there's no public "no".
   *Checked* in `spec/viewer-count.test.ts`.
 - **Close enough to just go.** Open the map and see what's on near you, starting a short walk away (about 1 km), and zoom out for more. Where you are stays on your phone.
   *Checked* in `spec/every-invite-has-a-spot.test.ts`.
@@ -41,4 +41,4 @@ Ray Oldenburg's *The Great Good Place* (1989) describes "third places" where peo
 
 Vybe started as my group's pitch, with profiles, AI matching, reputation scores, ID checks, a premium tier and venue partnerships. They were there to grow a platform. For a small group they make things worse: scoring the people you play pickleball with isn't low pressure, and matching isn't needed when you can read the whole list.
 
-There's also no chat. The group chat is what Vybe replaces, so the plan is in the invite and the talking happens when you meet. There are no accounts either, just a first name. Right now anyone with the link can join; who counts as a member is a decision I haven't made yet.
+There's also no chat. The group chat is what Vybe replaces, so the plan is in the Vybe and the talking happens when you meet. There are no accounts either, just a first name. Right now anyone with the link can join; who counts as a member is a decision I haven't made yet.

@@ -73,7 +73,7 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
           </div>
           <a class="button" href="#post">
             <Icon name="plus" />
-            Post an invite
+            Post a Vybe
           </a>
         </section>
 
@@ -99,12 +99,12 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
 
         <section aria-labelledby="open-invites" class="section" data-live="open-invites">
           <div class="section__head">
-            <h2 id="open-invites">Open invites</h2>
+            <h2 id="open-invites">Open Vybes</h2>
             {open.length > 0 && <span class="pill">{open.length}</span>}
             <SortSwitch hidden={open.length < 2} />
           </div>
           {open.length === 0 ? (
-            <p class="empty">No open invites right now. Be the first to post one.</p>
+            <p class="empty">No open Vybes right now. Be the first to post one.</p>
           ) : (
             <ul class="invites">
               {open.map((invite) => (
@@ -115,7 +115,7 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
         </section>
 
         <section aria-labelledby="post" class="section card">
-          <h2 id="post">Post an invite</h2>
+          <h2 id="post">Post a Vybe</h2>
           <form method="post" action="/api/invites" class="stack">
             <label class="field">
               <span class="field__label">What</span>
@@ -157,7 +157,7 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
               <span class="field__label">How many people, you included</span>
               <input name="size" type="number" required min="2" max={MAX_SIZE} value="4" />
             </label>
-            <button class="button button--wide">Post invite</button>
+            <button class="button button--wide">Post Vybe</button>
           </form>
         </section>
 
@@ -263,7 +263,7 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
   function tell(count: number) {
     const notice = document.querySelector<HTMLElement>("[data-notice]");
     if (!notice || count === 0) return;
-    notice.textContent = `${count} ${count === 1 ? "invite" : "invites"} changed while you were away`;
+    notice.textContent = `${count} ${count === 1 ? "Vybe" : "Vybes"} changed while you were away`;
     notice.hidden = false;
     clearTimeout(hideNotice);
     hideNotice = window.setTimeout(() => (notice.hidden = true), 8000);

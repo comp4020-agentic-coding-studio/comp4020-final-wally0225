@@ -6,12 +6,12 @@
 // included.
 ---
 
-<div class="viewswitch" role="group" aria-label="Show invites as">
+<div class="viewswitch" role="group" aria-label="Show Vybes as">
   <button type="button" class="viewswitch__button" data-view-button="list" aria-pressed="true">List</button>
   <button type="button" class="viewswitch__button" data-view-button="map" aria-pressed="false">Map</button>
 </div>
 
-<section class="section mapview" aria-label="Invites on a map" data-mapview>
+<section class="section mapview" aria-label="Vybes on a map" data-mapview>
   <div class="mapview__map" data-map></div>
   <p class="muted mapview__status" data-map-status role="status"></p>
 </section>
@@ -133,7 +133,7 @@
     document.dispatchEvent(new CustomEvent("vybe:map-viewing", { detail: ids }));
   }
 
-  const titleOf = (card: HTMLElement) => card.querySelector(".invite__title")?.textContent ?? "Invite";
+  const titleOf = (card: HTMLElement) => card.querySelector(".invite__title")?.textContent ?? "Vybe";
 
   // The cards themselves, Join forms and all, so joining from the map is the
   // same as joining from the list.
@@ -156,7 +156,7 @@
     const bounds = map.getBounds();
     const n = placed.filter(({ pin }) => bounds.contains(pin.getLatLng())).reduce((sum, p) => sum + p.ids.length, 0);
     status.textContent =
-      (n === 0 ? "No invites in this area. Zoom out to see more." : `${n} ${n === 1 ? "invite" : "invites"} in this area.`) +
+      (n === 0 ? "No Vybes in this area. Zoom out to see more." : `${n} ${n === 1 ? "Vybe" : "Vybes"} in this area.`) +
       (onAnu ? " Starting from ANU, since your location isn't available." : "");
   }
 
