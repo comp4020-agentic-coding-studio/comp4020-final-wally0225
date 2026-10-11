@@ -174,13 +174,40 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
   // everyone else's page without a reload. The post form isn't touched.
   const live = () => document.querySelectorAll<HTMLElement>("[data-live]");
 
+  // Someone choosing when they'll get there is mid-join: swapping the card
+  // under them would reset the dropdown or move the button they're about to
+  // press. Updates wait until they leave the form, and if the last spot goes
+  // in the meantime, the join is refused and they're told it filled up.
+  const joining = () => document.activeElement?.closest("form.join") != null;
+  let held = false;
+
   async function refresh() {
     const res = await fetch("/");
     if (!res.ok) return;
     const next = new DOMParser().parseFromString(await res.text(), "text/html");
+    // checked once the page has arrived, since they may have started joining
+    // while it was on its way; the update is fetched again when they're done
+    if (joining()) {
+      held = true;
+      return;
+    }
+    held = false;
+
+    // an arrival time already picked stays picked, if the card still offers it
+    const picked = new Map<string, string>();
+    for (const form of document.querySelectorAll<HTMLFormElement>("form.join")) {
+      picked.set(form.invite.value, form.arrival.value);
+    }
+
     for (const section of live()) {
       const fresh = next.querySelector(`[data-live="${section.dataset.live}"]`);
       if (fresh) section.replaceWith(fresh);
+    }
+
+    for (const form of document.querySelectorAll<HTMLFormElement>("form.join")) {
+      const arrival = picked.get(form.invite.value);
+      const select = form.arrival as HTMLSelectElement;
+      if (arrival && [...select.options].some((o) => o.value === arrival)) select.value = arrival;
     }
   }
 
@@ -191,6 +218,14 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
     new EventSource("/api/events").addEventListener("change", () => {
       clearTimeout(pending);
       pending = window.setTimeout(refresh, 150);
+    });
+
+    // focus moving from the dropdown to the Join button is still joining, so
+    // wait a moment to see where it lands
+    document.addEventListener("focusout", () => {
+      setTimeout(() => {
+        if (held && !joining()) refresh();
+      });
     });
   }
 </script>
