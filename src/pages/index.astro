@@ -73,7 +73,7 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
           </a>
         </section>
 
-        <section aria-labelledby="your-plans" class="section">
+        <section aria-labelledby="your-plans" class="section" data-live="your-plans">
           <div class="section__head">
             <h2 id="your-plans">Your plans</h2>
             {mine.length > 0 && <span class="pill">{mine.length}</span>}
@@ -89,7 +89,7 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
           )}
         </section>
 
-        <section aria-labelledby="open-invites" class="section">
+        <section aria-labelledby="open-invites" class="section" data-live="open-invites">
           <div class="section__head">
             <h2 id="open-invites">Open invites</h2>
             {open.length > 0 && <span class="pill">{open.length}</span>}
@@ -167,3 +167,30 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
     )
   }
 </Layout>
+
+<script>
+  // Live updates: the sections marked data-live are refetched whenever the
+  // server says an invite changed, so one person's post or join shows on
+  // everyone else's page without a reload. The post form isn't touched.
+  const live = () => document.querySelectorAll<HTMLElement>("[data-live]");
+
+  async function refresh() {
+    const res = await fetch("/");
+    if (!res.ok) return;
+    const next = new DOMParser().parseFromString(await res.text(), "text/html");
+    for (const section of live()) {
+      const fresh = next.querySelector(`[data-live="${section.dataset.live}"]`);
+      if (fresh) section.replaceWith(fresh);
+    }
+  }
+
+  if (live().length > 0) {
+    // several changes close together (six people joining at once) make one
+    // refetch, not six
+    let pending: number | undefined;
+    new EventSource("/api/events").addEventListener("change", () => {
+      clearTimeout(pending);
+      pending = window.setTimeout(refresh, 150);
+    });
+  }
+</script>

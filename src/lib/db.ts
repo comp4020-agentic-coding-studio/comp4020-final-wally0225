@@ -5,6 +5,7 @@ import Database from "better-sqlite3";
 import { and, asc, desc, eq, gt, inArray, isNull, lte, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { announce } from "./live";
 import { type Invite, type Person, invites, joins, people } from "./schema";
 import { STEP_MINUTES, nextStep } from "./time";
 
@@ -137,11 +138,13 @@ export function createInvite(values: {
   endsAt: Date;
   size: number;
 }): Invite {
-  return db.transaction((tx) => {
+  const created = db.transaction((tx) => {
     const invite = tx.insert(invites).values(values).returning().get();
     tx.insert(joins).values({ inviteId: invite.id, personId: values.hostId }).run();
     return invite;
   });
+  announce(created.id);
+  return created;
 }
 
 // Biggest group an invite can ask for, the host included.
@@ -159,7 +162,7 @@ export type JoinResult = "joined" | "already" | "full" | "gone" | "arrival";
 // synchronously on one connection, so two people taking the last spot at the
 // same moment can't both get it.
 export function joinInvite(inviteId: number, personId: string, now: Date, arrivesAt: Date | null): JoinResult {
-  return db.transaction((tx) => {
+  const result = db.transaction((tx): JoinResult => {
     const invite = tx.select().from(invites).where(eq(invites.id, inviteId)).get();
     if (!invite) return "gone";
 
@@ -177,13 +180,19 @@ export function joinInvite(inviteId: number, personId: string, now: Date, arrive
     tx.insert(joins).values({ inviteId, personId, arrivesAt }).run();
     return "joined";
   });
+  // announced once the transaction has committed, so a page that refetches
+  // straight away sees the join
+  if (result === "joined") announce(inviteId);
+  return result;
 }
 
 // The host can't leave their own invite; everyone else can.
 export function leaveInvite(inviteId: number, personId: string) {
   const invite = db.select().from(invites).where(eq(invites.id, inviteId)).get();
   if (!invite || invite.hostId === personId) return;
-  db.delete(joins)
+  const left = db
+    .delete(joins)
     .where(and(eq(joins.inviteId, inviteId), eq(joins.personId, personId)))
     .run();
+  if (left.changes > 0) announce(inviteId);
 }
