@@ -67,7 +67,11 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
             ))}
             {count > faces.length && <span class="avatar avatar--more">+{count - faces.length}</span>}
           </div>
-          <span class="invite__count">{`${count} of ${invite.size} going`}</span>
+          <span class="invite__tally">
+            <span class="invite__count">{`${count} of ${invite.size} going`}</span>
+            {/* filled in live by the page: how many others have this card on screen */}
+            <span class="invite__viewers" data-viewers hidden />
+          </span>
         </div>
         <div class="meter" aria-hidden="true">
           <span style={`width: ${Math.min(100, (count / invite.size) * 100)}%`} />

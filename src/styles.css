@@ -483,6 +483,22 @@ select {
     var(--shadow);
 }
 
+/* the headcount, with "2 others looking" under it (see index.astro) */
+.invite__tally {
+  display: grid;
+  justify-items: end;
+  gap: 0.1rem;
+}
+
+.invite__viewers {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.invite__viewers[hidden] {
+  display: none;
+}
+
 /* a card that just changed, briefly, so the eye finds it */
 .invite--changed {
   outline: 2px solid var(--accent);

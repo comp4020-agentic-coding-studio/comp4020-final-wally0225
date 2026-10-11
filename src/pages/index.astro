@@ -226,6 +226,7 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
       if (fresh) section.replaceWith(fresh);
     }
     const after = snapshot();
+    watchCards();
 
     for (const form of document.querySelectorAll<HTMLFormElement>("form.join")) {
       const arrival = picked.get(form.invite.value);
@@ -268,6 +269,64 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
     }
   }
 
+  // The viewer count: a card at least half on screen counts this person as
+  // looking. The page tells the server which cards those are, and shows on
+  // each card how many others are looking at it, never who. A hidden tab or
+  // a locked phone isn't looking at anything.
+  let stream: string | undefined;
+  let counts: Record<string, number> = {};
+  const onScreen = new Set<number>();
+  let lastReport = "";
+  let reportPending: number | undefined;
+
+  function report() {
+    clearTimeout(reportPending);
+    if (!stream) return;
+    const invites = document.hidden ? [] : [...onScreen].sort((a, b) => a - b);
+    const body = JSON.stringify({ stream, invites });
+    if (body === lastReport) return;
+    lastReport = body;
+    fetch("/api/viewing", { method: "POST", headers: { "content-type": "application/json" }, body, keepalive: true }).catch(
+      () => {},
+    );
+  }
+
+  // scrolling changes what's on screen many times a second; report once it settles
+  const reportSoon = () => {
+    clearTimeout(reportPending);
+    reportPending = window.setTimeout(report, 300);
+  };
+
+  const cards = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const invite = Number(entry.target.id.replace("invite-", ""));
+        if (entry.isIntersecting) onScreen.add(invite);
+        else onScreen.delete(invite);
+      }
+      reportSoon();
+    },
+    { threshold: 0.5 },
+  );
+
+  // the cards are new elements after every swap, so they're watched afresh
+  function watchCards() {
+    cards.disconnect();
+    onScreen.clear();
+    for (const card of document.querySelectorAll("[data-live] [data-going]")) cards.observe(card);
+    showCounts();
+  }
+
+  function showCounts() {
+    for (const card of document.querySelectorAll<HTMLElement>("[data-live] [data-going]")) {
+      const label = card.querySelector<HTMLElement>("[data-viewers]");
+      if (!label) continue;
+      const others = counts[card.id.replace("invite-", "")] ?? 0;
+      label.hidden = others === 0;
+      label.textContent = `${others} ${others === 1 ? "other" : "others"} looking`;
+    }
+  }
+
   if (live().length > 0) {
     // several changes close together (six people joining at once) make one
     // refetch, not six
@@ -283,6 +342,18 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
 
     const events = new EventSource("/api/events");
     events.addEventListener("change", soon);
+    // every connection, the first and each reconnect, gets a new id, and the
+    // server knows nothing about what this page shows until it's told again
+    events.addEventListener("hello", (e) => {
+      stream = JSON.parse(e.data).stream;
+      lastReport = "";
+      report();
+    });
+    events.addEventListener("viewers", (e) => {
+      counts = JSON.parse(e.data);
+      showCounts();
+    });
+    watchCards();
     // the first open is the page loading; any later one is a reconnect, and
     // whatever changed while it was down never arrived as an event
     let opened = false;
@@ -291,6 +362,8 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
       opened = true;
     });
     document.addEventListener("visibilitychange", () => {
+      // hiding reports nothing on screen straight away, so the count drops
+      report();
       if (!document.hidden) comeBack();
     });
 
