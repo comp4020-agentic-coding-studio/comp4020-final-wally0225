@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { MAX_HOURS, MAX_SIZE, createInvite } from "../../lib/db";
+import { ANU, MAX_KM_FROM_ANU, distanceKm } from "../../lib/geo";
 import { currentPerson } from "../../lib/identity";
 import { onStep, parseLocal } from "../../lib/time";
 
@@ -14,6 +15,8 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const startTime = String(form.get("startTime") ?? "");
   const endTime = String(form.get("endTime") ?? "");
   const size = Number(form.get("size"));
+  const lat = Number(form.get("lat") || NaN);
+  const lng = Number(form.get("lng") || NaN);
 
   // what, where and when are all required: a plan missing one of them is the
   // group-chat message everyone forgets
@@ -31,6 +34,13 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
 
   if (!Number.isInteger(size) || size < 2 || size > MAX_SIZE) return redirect("/?error=size", 303);
 
-  const invite = createInvite({ hostId: person.id, title, place, startsAt, endsAt, size });
+  // the spot the host tapped on the map; "where" in words isn't enough to
+  // put it on anyone else's map
+  const spot = { lat, lng };
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || distanceKm(spot, ANU) > MAX_KM_FROM_ANU) {
+    return redirect("/?error=spot", 303);
+  }
+
+  const invite = createInvite({ hostId: person.id, title, place, startsAt, endsAt, size, lat, lng });
   return redirect(`/#invite-${invite.id}`, 303);
 };

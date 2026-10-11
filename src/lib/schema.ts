@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { int, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { int, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 // The schema is the ground truth for the database. To change it: edit here,
 // run `pnpm db:generate` to turn the diff into a migration under drizzle/,
@@ -32,6 +32,10 @@ export const invites = sqliteTable("invites", {
   // existed, which the volume still holds
   endsAt: int("ends_at", { mode: "timestamp_ms" }),
   size: int().notNull(),
+  // the spot the host tapped on the map when posting; place stays the label
+  // people read. Null only on invites posted before the map existed.
+  lat: real(),
+  lng: real(),
   createdAt: int("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`(unixepoch() * 1000)`),

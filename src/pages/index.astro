@@ -2,6 +2,7 @@
 import Avatar from "../components/Avatar.astro";
 import Icon from "../components/Icon.astro";
 import InviteCard from "../components/InviteCard.astro";
+import SpotPicker from "../components/SpotPicker.astro";
 import Layout from "../layouts/Layout.astro";
 import { LATE_CUTOFF_MINUTES, MAX_HOURS, MAX_SIZE, canJoin, listPast, listUpcoming } from "../lib/db";
 import { currentPerson } from "../lib/identity";
@@ -25,6 +26,7 @@ const errors: Record<string, string> = {
   time: "Pick a start time that hasn't passed yet.",
   end: `Pick an end time after the start, at most ${MAX_HOURS} hours later.`,
   size: `A group is between 2 and ${MAX_SIZE} people, you included.`,
+  spot: "Tap the map where it is, somewhere near ANU.",
   full: "That one filled up just before you joined.",
   gone: "Joining that one has closed.",
   arrival: `Pick a time to get there at least ${LATE_CUTOFF_MINUTES} minutes before it ends.`,
@@ -118,6 +120,7 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
               <span class="field__label">Where</span>
               <input name="place" required maxlength="80" placeholder="ANU Sport courts" />
             </label>
+            <SpotPicker />
             <fieldset class="when">
               <legend class="field__label">When</legend>
               <label class="field when__date">

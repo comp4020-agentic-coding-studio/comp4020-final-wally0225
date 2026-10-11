@@ -33,6 +33,9 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
   id={variant === "past" ? undefined : `invite-${invite.id}`}
   class={`invite invite--${variant}`}
   data-going={variant === "past" ? undefined : count}
+  data-lat={variant === "past" ? undefined : invite.lat}
+  data-lng={variant === "past" ? undefined : invite.lng}
+  data-starts={variant === "past" ? undefined : invite.startsAt.getTime()}
 >
   <div class="invite__head">
     <h3 class="invite__title">{invite.title}</h3>

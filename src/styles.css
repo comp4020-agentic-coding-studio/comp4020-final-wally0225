@@ -176,6 +176,35 @@ main {
   color: var(--muted);
 }
 
+.field__hint {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.field__hint--error {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* --- maps (Leaflet) --------------------------------------------------------- */
+
+.picker {
+  height: 14rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  /* keeps Leaflet's panes under the sticky app bar */
+  z-index: 0;
+  isolation: isolate;
+}
+
+.pin {
+  fill: var(--accent);
+  fill-opacity: 0.9;
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
 input,
 select {
   font: inherit;

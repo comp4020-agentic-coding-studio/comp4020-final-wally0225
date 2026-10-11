@@ -1,0 +1,51 @@
+---
+// The post form's map: the host taps where the invite is, and the spot goes
+// with the form as lat and lng. "Where" in words stays the label people read;
+// this is what puts the invite on everyone else's map.
+---
+
+<div class="field">
+  <span class="field__label">Tap the spot on the map</span>
+  <div class="picker" data-picker></div>
+  <input type="hidden" name="lat" data-picker-lat />
+  <input type="hidden" name="lng" data-picker-lng />
+  <span class="field__hint" data-picker-hint>No spot yet</span>
+</div>
+
+<script>
+  import L from "leaflet";
+  import "leaflet/dist/leaflet.css";
+  import { ANU } from "../lib/geo";
+
+  const box = document.querySelector<HTMLElement>("[data-picker]");
+  if (box) {
+    const lat = document.querySelector<HTMLInputElement>("[data-picker-lat]")!;
+    const lng = document.querySelector<HTMLInputElement>("[data-picker-lng]")!;
+    const hint = document.querySelector<HTMLElement>("[data-picker-hint]")!;
+
+    const map = L.map(box).setView([ANU.lat, ANU.lng], 16);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+
+    let pin: L.CircleMarker | undefined;
+    map.on("click", (e) => {
+      lat.value = e.latlng.lat.toFixed(6);
+      lng.value = e.latlng.lng.toFixed(6);
+      pin ??= L.circleMarker(e.latlng, { radius: 9, className: "pin pin--picked" }).addTo(map);
+      pin.setLatLng(e.latlng);
+      hint.textContent = "Spot picked. Tap again to move it.";
+      hint.classList.remove("field__hint--error");
+    });
+
+    // a spot is required; say so here rather than after a round trip
+    box.closest("form")!.addEventListener("submit", (e) => {
+      if (lat.value) return;
+      e.preventDefault();
+      hint.textContent = "Tap the map where it is.";
+      hint.classList.add("field__hint--error");
+      box.scrollIntoView({ block: "center" });
+    });
+  }
+</script>

@@ -137,6 +137,8 @@ export function createInvite(values: {
   startsAt: Date;
   endsAt: Date;
   size: number;
+  lat: number;
+  lng: number;
 }): Invite {
   const created = db.transaction((tx) => {
     const invite = tx.insert(invites).values(values).returning().get();
