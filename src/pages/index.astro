@@ -73,6 +73,8 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
           </a>
         </section>
 
+        <p class="notice" role="status" data-notice hidden />
+
         <section aria-labelledby="your-plans" class="section" data-live="your-plans">
           <div class="section__head">
             <h2 id="your-plans">Your plans</h2>
@@ -181,6 +183,23 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
   const joining = () => document.activeElement?.closest("form.join") != null;
   let held = false;
 
+  // Coming back to the page (the phone woke, the connection came back, the
+  // tab was in the background) refreshes it without asking, then says how
+  // many invites changed, so things moving around isn't a mystery.
+  let returning = false;
+  const missed = new Set<string>();
+
+  // What each card says people can change: that it exists, and how many are
+  // going. The rest of a card ("in 20 min", "Starting soon") changes with the
+  // clock, which isn't news.
+  function snapshot(): Map<string, string> {
+    const cards = new Map<string, string>();
+    for (const card of document.querySelectorAll<HTMLElement>("[data-live] [data-going]")) {
+      cards.set(card.id, card.dataset.going!);
+    }
+    return cards;
+  }
+
   async function refresh() {
     const res = await fetch("/");
     if (!res.ok) return;
@@ -192,6 +211,8 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
       return;
     }
     held = false;
+    const away = returning || document.hidden;
+    returning = false;
 
     // an arrival time already picked stays picked, if the card still offers it
     const picked = new Map<string, string>();
@@ -199,15 +220,51 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
       picked.set(form.invite.value, form.arrival.value);
     }
 
+    const before = snapshot();
     for (const section of live()) {
       const fresh = next.querySelector(`[data-live="${section.dataset.live}"]`);
       if (fresh) section.replaceWith(fresh);
     }
+    const after = snapshot();
 
     for (const form of document.querySelectorAll<HTMLFormElement>("form.join")) {
       const arrival = picked.get(form.invite.value);
       const select = form.arrival as HTMLSelectElement;
       if (arrival && [...select.options].some((o) => o.value === arrival)) select.value = arrival;
+    }
+
+    // new, joined, left, or gone (ended, so off the list)
+    const changed = [...after].filter(([id, going]) => before.get(id) !== going).map(([id]) => id);
+    const gone = [...before.keys()].filter((id) => !after.has(id));
+
+    if (away) {
+      for (const id of [...changed, ...gone]) missed.add(id);
+      // nobody's looking yet; the note waits until they are
+      if (document.hidden) return;
+      tell(missed.size);
+      highlight([...missed]);
+      missed.clear();
+    } else {
+      highlight(changed);
+    }
+  }
+
+  let hideNotice: number | undefined;
+  function tell(count: number) {
+    const notice = document.querySelector<HTMLElement>("[data-notice]");
+    if (!notice || count === 0) return;
+    notice.textContent = `${count} ${count === 1 ? "invite" : "invites"} changed while you were away`;
+    notice.hidden = false;
+    clearTimeout(hideNotice);
+    hideNotice = window.setTimeout(() => (notice.hidden = true), 8000);
+  }
+
+  function highlight(ids: string[]) {
+    for (const id of ids) {
+      const card = document.getElementById(id);
+      if (!card) continue;
+      card.classList.add("invite--changed");
+      setTimeout(() => card.classList.remove("invite--changed"), 2500);
     }
   }
 
@@ -215,9 +272,26 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
     // several changes close together (six people joining at once) make one
     // refetch, not six
     let pending: number | undefined;
-    new EventSource("/api/events").addEventListener("change", () => {
+    const soon = () => {
       clearTimeout(pending);
       pending = window.setTimeout(refresh, 150);
+    };
+    const comeBack = () => {
+      returning = true;
+      soon();
+    };
+
+    const events = new EventSource("/api/events");
+    events.addEventListener("change", soon);
+    // the first open is the page loading; any later one is a reconnect, and
+    // whatever changed while it was down never arrived as an event
+    let opened = false;
+    events.addEventListener("open", () => {
+      if (opened) comeBack();
+      opened = true;
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) comeBack();
     });
 
     // focus moving from the dropdown to the Join button is still joining, so

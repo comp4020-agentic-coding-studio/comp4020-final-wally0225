@@ -29,7 +29,11 @@ const faces = invite.going.slice(0, 5);
 const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTime()) / 60_000);
 ---
 
-<li id={variant === "past" ? undefined : `invite-${invite.id}`} class={`invite invite--${variant}`}>
+<li
+  id={variant === "past" ? undefined : `invite-${invite.id}`}
+  class={`invite invite--${variant}`}
+  data-going={variant === "past" ? undefined : count}
+>
   <div class="invite__head">
     <h3 class="invite__title">{invite.title}</h3>
     <div class="badges">
