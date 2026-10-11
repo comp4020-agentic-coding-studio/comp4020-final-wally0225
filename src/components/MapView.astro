@@ -1,0 +1,183 @@
+---
+// "Close enough to just go": the invites on a map, opening on about a
+// kilometre around where you are (or ANU, if the browser can't say). A List |
+// Map switch picks which one the page shows. The pins come from the cards
+// already on the page, so a pin always says what its card says, live updates
+// included.
+---
+
+<div class="viewswitch" role="group" aria-label="Show invites as">
+  <button type="button" class="viewswitch__button" data-view-button="list" aria-pressed="true">List</button>
+  <button type="button" class="viewswitch__button" data-view-button="map" aria-pressed="false">Map</button>
+</div>
+
+<section class="section mapview" aria-label="Invites on a map" data-mapview>
+  <div class="mapview__map" data-map></div>
+  <p class="muted mapview__status" data-map-status role="status"></p>
+</section>
+
+<script>
+  import L from "leaflet";
+  import "leaflet/dist/leaflet.css";
+  import { ANU, START_KM } from "../lib/geo";
+  import { type Spot, locate } from "../lib/locate";
+
+  const box = document.querySelector<HTMLElement>("[data-map]");
+  const status = document.querySelector<HTMLElement>("[data-map-status]");
+  const buttons = document.querySelectorAll<HTMLButtonElement>("[data-view-button]");
+
+  let map: L.Map | undefined;
+  const pins = L.layerGroup();
+  // each pin and how many invites it stands for, for "N invites in this area"
+  let placed: { pin: L.Marker; invites: number }[] = [];
+  let you: L.CircleMarker | undefined;
+  // the spot whose popup is open, so a live refresh can reopen it
+  let openSpot: string | undefined;
+  // true once the browser couldn't say where they are, so the map is on ANU
+  let onAnu = false;
+
+  // which view this device last used; only a convenience, so it's fine if
+  // storage isn't there
+  const remembered = (): string | null => {
+    try {
+      return localStorage.getItem("vybe:view");
+    } catch {
+      return null;
+    }
+  };
+  const remember = (view: string) => {
+    try {
+      localStorage.setItem("vybe:view", view);
+    } catch {
+      // private window or blocked storage
+    }
+  };
+
+  // The cards the server sent, as pins. Invites at the same spot (within
+  // about 10 m: two games on one court) share a pin showing how many, and its
+  // popup lists all of them. Your own plans make the pin a different colour,
+  // so they stand out wherever you've panned to. Invites posted before the
+  // map existed have no spot, so no pin.
+  function placePins() {
+    if (!map) return;
+    pins.clearLayers();
+    placed = [];
+    const spots = new Map<string, { lat: number; lng: number; cards: HTMLElement[] }>();
+    for (const card of document.querySelectorAll<HTMLElement>("[data-live] [data-going]")) {
+      const lat = Number(card.dataset.lat);
+      const lng = Number(card.dataset.lng);
+      if (!card.dataset.lat || !Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+      const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+      if (!spots.has(key)) spots.set(key, { lat, lng, cards: [] });
+      spots.get(key)!.cards.push(card);
+    }
+
+    for (const [key, { lat, lng, cards }] of spots) {
+      const mine = cards.some((card) => card.classList.contains("invite--mine"));
+      const icon = L.divIcon({
+        className: "",
+        html: `<span class="pin${mine ? " pin--mine" : ""}">${cards.length > 1 ? cards.length : ""}</span>`,
+        iconSize: [28, 28],
+      });
+      const pin = L.marker([lat, lng], { icon, keyboard: true, title: cards.map((c) => titleOf(c)).join(", ") });
+      pin.bindPopup(() => cardsFor(cards.map((c) => c.id)), {
+        maxWidth: 300,
+        minWidth: 240,
+        // several invites at one spot scroll inside the popup, rather than
+        // pushing the map (and the pin) out of view
+        maxHeight: 320,
+        autoPanPaddingTopLeft: [56, 16],
+        autoPanPaddingBottomRight: [16, 16],
+        className: "pin-popup",
+      });
+      pin.on("popupopen", () => (openSpot = key));
+      pin.on("popupclose", () => {
+        if (openSpot === key) openSpot = undefined;
+      });
+      pin.addTo(pins);
+      placed.push({ pin, invites: cards.length });
+      // a refresh rebuilds every pin; the one that was open stays open
+      if (openSpot === key) pin.openPopup();
+    }
+    countInView();
+  }
+
+  const titleOf = (card: HTMLElement) => card.querySelector(".invite__title")?.textContent ?? "Invite";
+
+  // The cards themselves, Join forms and all, so joining from the map is the
+  // same as joining from the list.
+  function cardsFor(ids: string[]): HTMLElement {
+    const list = document.createElement("ul");
+    list.className = "invites";
+    for (const id of ids) {
+      const card = document.getElementById(id)!.cloneNode(true) as HTMLElement;
+      card.removeAttribute("id");
+      card.classList.remove("invite--changed");
+      list.append(card);
+    }
+    return list;
+  }
+
+  function countInView() {
+    if (!map || !status) return;
+    const bounds = map.getBounds();
+    const n = placed.filter(({ pin }) => bounds.contains(pin.getLatLng())).reduce((sum, p) => sum + p.invites, 0);
+    status.textContent =
+      (n === 0 ? "No invites in this area. Zoom out to see more." : `${n} ${n === 1 ? "invite" : "invites"} in this area.`) +
+      (onAnu ? " Starting from ANU, since your location isn't available." : "");
+  }
+
+  // opens on about START_KM around them, or around ANU
+  function frame(spot: Spot) {
+    map!.fitBounds(L.latLng(spot.lat, spot.lng).toBounds(START_KM * 2000));
+  }
+
+  function showYou(spot: Spot) {
+    you ??= L.circleMarker([spot.lat, spot.lng], { radius: 7, className: "pin pin--you" })
+      .bindTooltip("You")
+      .addTo(map!);
+    you.setLatLng([spot.lat, spot.lng]);
+  }
+
+  async function openMap() {
+    if (map) {
+      // Leaflet measures its box when it's created, and it was hidden
+      map.invalidateSize();
+      return;
+    }
+    map = L.map(box!);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+    pins.addTo(map);
+    map.on("moveend", countInView);
+    frame(ANU);
+    placePins();
+
+    const spot = await locate(true);
+    if (spot) {
+      frame(spot);
+      showYou(spot);
+    } else {
+      onAnu = true;
+      countInView();
+    }
+  }
+
+  function show(view: "list" | "map") {
+    document.documentElement.dataset.view = view;
+    for (const button of buttons) button.setAttribute("aria-pressed", String(button.dataset.viewButton === view));
+    remember(view);
+    if (view === "map") openMap();
+  }
+
+  if (box) {
+    for (const button of buttons) {
+      button.addEventListener("click", () => show(button.dataset.viewButton === "map" ? "map" : "list"));
+    }
+    // the page swapped in fresh cards (see the live updates in index.astro)
+    document.addEventListener("vybe:cards", placePins);
+    show(remembered() === "map" ? "map" : "list");
+  }
+</script>

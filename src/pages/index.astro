@@ -2,6 +2,7 @@
 import Avatar from "../components/Avatar.astro";
 import Icon from "../components/Icon.astro";
 import InviteCard from "../components/InviteCard.astro";
+import MapView from "../components/MapView.astro";
 import SpotPicker from "../components/SpotPicker.astro";
 import Layout from "../layouts/Layout.astro";
 import { LATE_CUTOFF_MINUTES, MAX_HOURS, MAX_SIZE, canJoin, listPast, listUpcoming } from "../lib/db";
@@ -76,6 +77,8 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
         </section>
 
         <p class="notice" role="status" data-notice hidden />
+
+        <MapView />
 
         <section aria-labelledby="your-plans" class="section" data-live="your-plans">
           <div class="section__head">
@@ -230,6 +233,7 @@ const error = errors[Astro.url.searchParams.get("error") ?? ""];
     }
     const after = snapshot();
     watchCards();
+    document.dispatchEvent(new CustomEvent("vybe:cards"));
 
     for (const form of document.querySelectorAll<HTMLFormElement>("form.join")) {
       const arrival = picked.get(form.invite.value);
