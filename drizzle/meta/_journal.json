@@ -43,6 +43,13 @@
       "when": 1791943626501,
       "tag": "0005_closed_phalanx",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1791946771911,
+      "tag": "0006_perpetual_the_executioner",
+      "breakpoints": true
     }
   ]
 }

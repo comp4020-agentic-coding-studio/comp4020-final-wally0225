@@ -78,6 +78,8 @@ export const invites = sqliteTable("invites", {
   groupId: int("group_id").references(() => groups.id),
   // a group's regular Vybe: the next week's is posted when this one ends
   repeat: text({ enum: ["once", "weekly"] }).notNull().default("once"),
+  // what it is (src/lib/tags.ts); null on Vybes posted before tags existed
+  tag: text(),
   createdAt: int("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`(unixepoch() * 1000)`),

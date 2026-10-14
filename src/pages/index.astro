@@ -9,6 +9,7 @@ import Layout from "../layouts/Layout.astro";
 import { LATE_CUTOFF_MINUTES, MAX_HOURS, MAX_SIZE, canJoin, listPast, listUpcoming } from "../lib/db";
 import { hostingGroups, listGroups } from "../lib/groups";
 import { currentPerson } from "../lib/identity";
+import { TAGS } from "../lib/tags";
 import { TIME_SLOTS, nextStep, toLocalInput } from "../lib/time";
 
 const person = currentPerson(Astro.cookies);
@@ -40,6 +41,7 @@ const errors: Record<string, string> = {
   arrival: `Pick a time to get there at least ${LATE_CUTOFF_MINUTES} minutes before it ends.`,
   "not-host": "Only the person who posted a Vybe can cancel it.",
   "not-group-host": "Only a group's hosts can post Vybes in it.",
+  tag: "Pick what kind of Vybe it is from the list.",
   members: "That Vybe is for a group's members. Join the group first, then join the Vybe.",
 };
 const error = errors[Astro.url.searchParams.get("error") ?? ""];
@@ -107,6 +109,17 @@ const postRefused = ["details", "time", "end", "size", "spot", "not-group-host"]
               <input name="place" required maxlength="80" placeholder="ANU Sport courts" />
             </label>
             <SpotPicker />
+            <fieldset class="tagpick post__tag">
+              <legend class="field__label">What kind of Vybe <span class="field__label--sub">(optional)</span></legend>
+              <div class="tagpick__options">
+                {Object.entries(TAGS).map(([value, t]) => (
+                  <label class="tagpick__option">
+                    <input type="radio" name="tag" value={value} />
+                    <span><span aria-hidden="true">{t.emoji}</span>{t.label}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             <fieldset class="when">
               <legend class="field__label">When</legend>
               <label class="field when__date">
@@ -201,6 +214,19 @@ const postRefused = ["details", "time", "end", "size", "spot", "not-group-host"]
             {open.length > 0 && <span class="pill">{open.length}</span>}
             <SortSwitch hidden={open.length < 2} />
           </div>
+          {/* filter by tag; the page hides cards, so nothing about it reaches the server */}
+          {open.length > 1 && (
+            <div class="tagfilter" role="group" aria-label="Show only">
+              <button type="button" class="tagfilter__chip" data-tag-filter="" aria-pressed="true">All</button>
+              {Object.entries(TAGS)
+                .filter(([value]) => open.some((i) => i.tag === value))
+                .map(([value, t]) => (
+                  <button type="button" class="tagfilter__chip" data-tag-filter={value} aria-pressed="false">
+                    <span aria-hidden="true">{t.emoji}</span>{t.label}
+                  </button>
+                ))}
+            </div>
+          )}
           {open.length === 0 ? (
             <p class="empty">No open Vybes right now. Be the first to post one.</p>
           ) : (
@@ -246,6 +272,13 @@ const postRefused = ["details", "time", "end", "size", "spot", "not-group-host"]
         post.querySelector("summary")?.focus();
       }
     });
+    // tapping the chosen tag again un-chooses it, since a tag is optional
+    for (const radio of post.querySelectorAll<HTMLInputElement>('input[name="tag"]')) {
+      radio.addEventListener("pointerdown", () => (radio.dataset.was = String(radio.checked)));
+      radio.addEventListener("click", () => {
+        if (radio.dataset.was === "true") radio.checked = false;
+      });
+    }
     // a Vybe can only repeat in a group
     const groupSelect = post.querySelector<HTMLSelectElement>("[data-post-group]");
     const repeat = post.querySelector<HTMLFieldSetElement>("[data-post-repeat]");
@@ -489,4 +522,27 @@ const postRefused = ["details", "time", "end", "size", "spot", "not-group-host"]
       });
     });
   }
+</script>
+
+<script>
+  // The tag filter: shows only open Vybes with the chosen tag. It's put back
+  // after every live update, which swaps in fresh cards and a fresh row.
+  let chosen = "";
+  function applyFilter() {
+    for (const chip of document.querySelectorAll<HTMLButtonElement>("[data-tag-filter]")) {
+      chip.setAttribute("aria-pressed", String(chip.dataset.tagFilter === chosen));
+    }
+    // a tag that's no longer on any card falls back to All
+    if (chosen && !document.querySelector(`[data-tag-filter="${chosen}"]`)) chosen = "";
+    for (const card of document.querySelectorAll<HTMLElement>('[data-live="open-invites"] .invites > li')) {
+      card.hidden = !!chosen && card.dataset.tag !== chosen;
+    }
+  }
+  document.addEventListener("click", (e) => {
+    const chip = (e.target as Element).closest<HTMLButtonElement>("[data-tag-filter]");
+    if (!chip) return;
+    chosen = chip.dataset.tagFilter ?? "";
+    applyFilter();
+  });
+  document.addEventListener("vybe:cards", applyFilter);
 </script>

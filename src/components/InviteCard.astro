@@ -1,5 +1,6 @@
 ---
 import { type InviteView, arrivalOptions } from "../lib/db";
+import { TAGS, isTag } from "../lib/tags";
 import { dateBlock, formatClock, formatTimes } from "../lib/time";
 import Avatar from "./Avatar.astro";
 import Icon from "./Icon.astro";
@@ -18,6 +19,7 @@ interface Props {
 
 const { invite, now, personId, variant, groupsIn = new Set() } = Astro.props;
 const needsGroup = invite.groupId !== null && !groupsIn.has(invite.groupId);
+const tag = invite.tag && isTag(invite.tag) ? invite.tag : undefined;
 
 const count = invite.going.length;
 const full = count >= invite.size;
@@ -41,6 +43,7 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
   data-lat={variant === "past" ? undefined : invite.lat}
   data-lng={variant === "past" ? undefined : invite.lng}
   data-starts={variant === "past" ? undefined : invite.startsAt.getTime()}
+  data-tag={tag}
 >
   <div class="invite__main">
     <div class="datebox" aria-hidden="true">
@@ -48,12 +51,21 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
       <span class="datebox__day">{block.day}</span>
     </div>
     <div class="invite__body">
+      {(tag || invite.group) && (
+        <div class="invite__tags">
+          {tag && (
+            <span class={`tagchip tagchip--${tag}`}>
+              <span aria-hidden="true">{TAGS[tag].emoji}</span>{TAGS[tag].label}
+            </span>
+          )}
       {invite.group && (
         <a class="grouptag" href={`/groups/${invite.groupId}`}>
           <Icon name="users" />
           {invite.group}
           {invite.repeat === "weekly" && <span class="grouptag__repeat">· Weekly</span>}
         </a>
+      )}
+        </div>
       )}
       <div class="invite__head">
         <h3 class="invite__title">{invite.title}</h3>

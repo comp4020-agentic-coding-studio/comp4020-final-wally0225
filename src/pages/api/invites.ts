@@ -4,6 +4,7 @@ import { ANU, MAX_KM_FROM_ANU, distanceKm } from "../../lib/geo";
 import { canHost, roleIn } from "../../lib/groups";
 import { currentPerson } from "../../lib/identity";
 import { log } from "../../lib/log";
+import { isTag } from "../../lib/tags";
 import { onStep, parseLocal } from "../../lib/time";
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
@@ -53,7 +54,12 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   }
   const repeat = groupId !== null && form.get("repeat") === "weekly" ? "weekly" : "once";
 
-  const invite = createInvite({ hostId: person.id, title, place, startsAt, endsAt, size, lat, lng, groupId, repeat });
-  log(person, "posted", { invite: invite.id, title, group: groupId, repeat });
+  // optional, but from the list if given
+  const tagField = String(form.get("tag") ?? "");
+  if (tagField && !isTag(tagField)) return redirect("/?error=tag", 303);
+  const tag = tagField || null;
+
+  const invite = createInvite({ hostId: person.id, title, place, startsAt, endsAt, size, lat, lng, groupId, repeat, tag });
+  log(person, "posted", { invite: invite.id, title, group: groupId, repeat, tag });
   return redirect(`/#invite-${invite.id}`, 303);
 };

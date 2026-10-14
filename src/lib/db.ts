@@ -156,6 +156,7 @@ export function createInvite(values: {
   lng: number;
   groupId?: number | null;
   repeat?: "once" | "weekly";
+  tag?: string | null;
 }): Invite {
   const created = db.transaction((tx) => {
     const invite = tx.insert(invites).values(values).returning().get();
@@ -263,6 +264,7 @@ export function rollRepeats(now: Date) {
           lng: invite.lng,
           groupId: invite.groupId,
           repeat: "weekly",
+          tag: invite.tag,
         })
         .returning()
         .get();
