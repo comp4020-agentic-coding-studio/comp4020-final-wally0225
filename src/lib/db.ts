@@ -50,7 +50,9 @@ const over = (now: Date) => or(lte(invites.endsAt, now), and(isNull(invites.ends
 
 // Invites that haven't ended yet, soonest first: whether it's in 30 minutes,
 // tomorrow, or already going, the only question is whether you're free.
-export function listUpcoming(now: Date): InviteView[] {
+// A cancelled one is only for the people who joined it, so they know not to
+// turn up; everyone else never sees it again.
+export function listUpcoming(now: Date, personId: string): InviteView[] {
   const rows = db
     .select({ invite: invites, host: people.name })
     .from(invites)
@@ -58,7 +60,7 @@ export function listUpcoming(now: Date): InviteView[] {
     .where(notOver(now))
     .orderBy(asc(invites.startsAt))
     .all();
-  return withGoing(rows);
+  return withGoing(rows).filter((i) => !i.cancelledAt || i.going.some((g) => g.id === personId));
 }
 
 // Someone can join late, as long as they'll get there at least this long
@@ -81,6 +83,7 @@ export function arrivalOptions(invite: Invite, now: Date): { onTime: boolean; la
 }
 
 export function canJoin(invite: Invite, now: Date): boolean {
+  if (invite.cancelledAt) return false;
   const options = arrivalOptions(invite, now);
   return options.onTime || options.late.length > 0;
 }
@@ -166,7 +169,7 @@ export type JoinResult = "joined" | "already" | "full" | "gone" | "arrival";
 export function joinInvite(inviteId: number, personId: string, now: Date, arrivesAt: Date | null): JoinResult {
   const result = db.transaction((tx): JoinResult => {
     const invite = tx.select().from(invites).where(eq(invites.id, inviteId)).get();
-    if (!invite) return "gone";
+    if (!invite || invite.cancelledAt) return "gone";
 
     // a step of grace, for a page opened a few minutes before joining
     const options = arrivalOptions(invite, new Date(now.getTime() - STEP_MINUTES * 60_000));
@@ -188,10 +191,25 @@ export function joinInvite(inviteId: number, personId: string, now: Date, arrive
   return result;
 }
 
+export type CancelResult = "cancelled" | "not-host" | "gone";
+
+// Only the host can call an invite off, and only before it ends. Checked
+// here, on the server, whatever the page shows.
+export function cancelInvite(inviteId: number, personId: string, now: Date): CancelResult {
+  const invite = db.select().from(invites).where(eq(invites.id, inviteId)).get();
+  if (!invite) return "gone";
+  if (invite.hostId !== personId) return "not-host";
+  const ended = invite.endsAt ? invite.endsAt <= now : invite.startsAt <= now;
+  if (invite.cancelledAt || ended) return "gone";
+  db.update(invites).set({ cancelledAt: now }).where(eq(invites.id, inviteId)).run();
+  announce(inviteId);
+  return "cancelled";
+}
+
 // The host can't leave their own invite; everyone else can.
 export function leaveInvite(inviteId: number, personId: string) {
   const invite = db.select().from(invites).where(eq(invites.id, inviteId)).get();
-  if (!invite || invite.hostId === personId) return;
+  if (!invite || invite.hostId === personId || invite.cancelledAt) return;
   const left = db
     .delete(joins)
     .where(and(eq(joins.inviteId, inviteId), eq(joins.personId, personId)))

@@ -12,7 +12,7 @@ import { TIME_SLOTS, nextStep, toLocalInput } from "../lib/time";
 
 const person = currentPerson(Astro.cookies);
 const now = new Date();
-const upcoming = person ? listUpcoming(now) : [];
+const upcoming = person ? listUpcoming(now, person.id) : [];
 const past = person ? listPast(person.id, now) : [];
 const mine = upcoming.filter((i) => i.going.some((g) => g.id === person?.id));
 const open = upcoming.filter((i) => !mine.includes(i) && canJoin(i, now));
@@ -32,6 +32,7 @@ const errors: Record<string, string> = {
   full: "That one filled up just before you joined.",
   gone: "Joining that one has closed.",
   arrival: `Pick a time to get there at least ${LATE_CUTOFF_MINUTES} minutes before it ends.`,
+  "not-host": "Only the person who posted a Vybe can cancel it.",
 };
 const error = errors[Astro.url.searchParams.get("error") ?? ""];
 // a refused post opens the form again, so the reason is next to what to fix
@@ -147,7 +148,7 @@ const postRefused = ["details", "time", "end", "size", "spot"].includes(Astro.ur
 
         <section aria-labelledby="your-plans" class="section" data-live="your-plans">
           <div class="section__head">
-            <h2 id="your-plans">Your plans</h2>
+            <h2 id="your-plans">Your Vybes</h2>
             {mine.length > 0 && <span class="pill">{mine.length}</span>}
           </div>
           {mine.length === 0 ? (

@@ -537,6 +537,75 @@ select {
   border-color: var(--danger);
 }
 
+.button--danger {
+  background: var(--danger);
+  box-shadow: none;
+}
+
+.badge--cancelled {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* called off by the host: still shown to those who joined, faded */
+.invite--cancelled {
+  background: var(--surface);
+  opacity: 0.75;
+}
+
+.invite--cancelled .invite__title {
+  text-decoration: line-through;
+  text-decoration-color: var(--muted);
+}
+
+.invite--cancelled .datebox {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.invite__note {
+  font-size: 0.85rem;
+  font-weight: 650;
+  color: var(--danger);
+}
+
+/* Cancel Vybe asks once more before it calls it off */
+.cancel {
+  display: contents;
+}
+
+.cancel__confirm {
+  display: grid;
+  flex: 1 1 100%;
+}
+
+.cancel__confirm > summary {
+  list-style: none;
+  justify-self: end;
+}
+
+.cancel__confirm > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cancel__confirm[open] > summary {
+  display: none;
+}
+
+.cancel__pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .pill {
   display: inline-grid;
   place-items: center;

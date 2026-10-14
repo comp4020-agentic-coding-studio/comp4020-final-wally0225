@@ -36,6 +36,9 @@ export const invites = sqliteTable("invites", {
   // people read. Null only on invites posted before the map existed.
   lat: real(),
   lng: real(),
+  // set when the host calls it off; the people who joined still see it,
+  // marked cancelled, and nobody new can join
+  cancelledAt: int("cancelled_at", { mode: "timestamp_ms" }),
   createdAt: int("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`(unixepoch() * 1000)`),

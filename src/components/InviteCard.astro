@@ -4,7 +4,7 @@ import { dateBlock, formatClock, formatTimes } from "../lib/time";
 import Avatar from "./Avatar.astro";
 import Icon from "./Icon.astro";
 
-// One Vybe, as it appears in "Your plans" (mine), "Open Vybes" (open) or
+// One Vybe, as it appears in "Your Vybes" (mine), "Open Vybes" (open) or
 // "Past plans" (past): a calendar block, what, when and where, who's going,
 // and one Join button.
 interface Props {
@@ -21,6 +21,7 @@ const full = count >= invite.size;
 const started = invite.startsAt <= now;
 const soon = !started && invite.startsAt.getTime() - now.getTime() < 60 * 60_000;
 const hosting = invite.hostId === personId;
+const cancelled = invite.cancelledAt !== null;
 const arrival = variant === "open" && !full ? arrivalOptions(invite, now) : undefined;
 // only ask when they'll get there if there's a choice to make
 const onlyOnTime = arrival?.onTime && arrival.late.length === 0;
@@ -32,7 +33,7 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
 
 <li
   id={variant === "past" ? undefined : `invite-${invite.id}`}
-  class={`invite invite--${variant}`}
+  class={`invite invite--${variant}${cancelled ? " invite--cancelled" : ""}`}
   data-going={variant === "past" ? undefined : count}
   data-lat={variant === "past" ? undefined : invite.lat}
   data-lng={variant === "past" ? undefined : invite.lng}
@@ -47,9 +48,10 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
       <div class="invite__head">
         <h3 class="invite__title">{invite.title}</h3>
         <div class="badges">
-          {variant !== "past" && started && <span class="badge badge--live">Now</span>}
-          {variant !== "past" && soon && <span class="badge badge--soon">Soon</span>}
-          {variant === "mine" && <span class="badge badge--mine">{hosting ? "Hosting" : "Going"}</span>}
+          {cancelled && <span class="badge badge--cancelled">Cancelled</span>}
+          {!cancelled && variant !== "past" && started && <span class="badge badge--live">Now</span>}
+          {!cancelled && variant !== "past" && soon && <span class="badge badge--soon">Soon</span>}
+          {!cancelled && variant === "mine" && <span class="badge badge--mine">{hosting ? "Hosting" : "Going"}</span>}
           {variant === "open" && full && <span class="badge">Full</span>}
         </div>
       </div>
@@ -101,7 +103,21 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
         <p class="invite__names">
           {invite.going.map((g) => (g.arrivesAt ? `${g.name} (from ${formatClock(g.arrivesAt)})` : g.name)).join(", ")}
         </p>
-        {!hosting && (
+        {cancelled ? (
+          <span class="invite__note">{hosting ? "You called this off" : `${invite.host} called this off`}</span>
+        ) : hosting ? (
+          <form method="post" action="/api/cancel" class="cancel">
+            <input type="hidden" name="invite" value={invite.id} />
+            {/* a second tap confirms, so a stray one can't call it off */}
+            <details class="cancel__confirm">
+              <summary class="button button--ghost button--small">Cancel Vybe</summary>
+              <div class="cancel__pick">
+                <span>Call it off for everyone who joined?</span>
+                <button class="button button--danger button--small">Yes, cancel it</button>
+              </div>
+            </details>
+          </form>
+        ) : (
           <form method="post" action="/api/join">
             <input type="hidden" name="invite" value={invite.id} />
             <input type="hidden" name="action" value="leave" />
