@@ -3,7 +3,7 @@ import "../styles.css";
 
 interface Props {
   title: string;
-  active: "invites" | "about";
+  active: "invites" | "groups" | "about";
 }
 
 const { title, active } = Astro.props;
@@ -26,6 +26,7 @@ const { title, active } = Astro.props;
         </a>
         <nav aria-label="site" class="tabs">
           <a href="/" aria-current={active === "invites" ? "page" : undefined}>Vybes</a>
+          <a href="/groups" aria-current={active === "groups" ? "page" : undefined}>Groups</a>
           <a href="/readme/" aria-current={active === "about" ? "page" : undefined}>About</a>
         </nav>
       </div>

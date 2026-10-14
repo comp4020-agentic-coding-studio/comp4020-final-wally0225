@@ -18,6 +18,41 @@ export const people = sqliteTable("people", {
     .default(sql`(unixepoch() * 1000)`),
 });
 
+// A group anyone can start and anyone can join: "ANU Pickleball",
+// "Burgmann Hall". Its Vybes show to everyone, labelled with it, but only
+// members can join them.
+export const groups = sqliteTable("groups", {
+  id: int().primaryKey({ autoIncrement: true }),
+  name: text().notNull(),
+  about: text().notNull().default(""),
+  ownerId: text("owner_id")
+    .notNull()
+    .references(() => people.id),
+  createdAt: int("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+});
+
+// Who's in a group, and what they can do: the owner (who started it) and
+// hosts post Vybes; a host can make a member a host; only the owner can take
+// hosting back or remove someone.
+export const members = sqliteTable(
+  "members",
+  {
+    groupId: int("group_id")
+      .notNull()
+      .references(() => groups.id),
+    personId: text("person_id")
+      .notNull()
+      .references(() => people.id),
+    role: text({ enum: ["owner", "host", "member"] }).notNull(),
+    joinedAt: int("joined_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (table) => [primaryKey({ columns: [table.groupId, table.personId] })],
+);
+
 // "Pickleball at the ANU Sport courts, Wed 5pm, 4 of us." size counts the
 // host, who is the first to join.
 export const invites = sqliteTable("invites", {
@@ -39,6 +74,10 @@ export const invites = sqliteTable("invites", {
   // set when the host calls it off; the people who joined still see it,
   // marked cancelled, and nobody new can join
   cancelledAt: int("cancelled_at", { mode: "timestamp_ms" }),
+  // posted in a group; null for a Vybe anyone can join
+  groupId: int("group_id").references(() => groups.id),
+  // a group's regular Vybe: the next week's is posted when this one ends
+  repeat: text({ enum: ["once", "weekly"] }).notNull().default("once"),
   createdAt: int("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`(unixepoch() * 1000)`),
@@ -67,3 +106,5 @@ export const joins = sqliteTable(
 
 export type Person = typeof people.$inferSelect;
 export type Invite = typeof invites.$inferSelect;
+export type Group = typeof groups.$inferSelect;
+export type Role = (typeof members.$inferSelect)["role"];

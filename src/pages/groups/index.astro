@@ -1,0 +1,103 @@
+---
+import Icon from "../../components/Icon.astro";
+import Layout from "../../layouts/Layout.astro";
+import { MAX_GROUP_ABOUT, MAX_GROUP_NAME, listGroups } from "../../lib/groups";
+import { currentPerson } from "../../lib/identity";
+
+// Every group, yours first. Anyone can start one and anyone can join.
+const person = currentPerson(Astro.cookies);
+if (!person) return Astro.redirect("/");
+
+const all = listGroups(person.id);
+const yours = all.filter((g) => g.role);
+const others = all.filter((g) => !g.role);
+const error = Astro.url.searchParams.get("error") === "name" ? `Give the group a name (up to ${MAX_GROUP_NAME} characters).` : undefined;
+const roleLabel = { owner: "Owner", host: "Host", member: "Member" } as const;
+---
+
+<Layout title="Groups · Vybe" active="groups">
+  <section class="pagehead">
+    <div>
+      <h1>Groups</h1>
+      <p class="muted">Regulars, clubs and halls. Anyone can start one; anyone can join.</p>
+    </div>
+  </section>
+
+  {error && <p class="toast" role="alert"><Icon name="alert" />{error}</p>}
+
+  <details class="post" open={!!error}>
+    <summary class="button post__toggle"><Icon name="plus" />Start a group</summary>
+    <form method="post" action="/api/groups" class="stack card post__form post__form--simple">
+      <input type="hidden" name="action" value="create" />
+      <label class="field">
+        <span class="field__label">Name</span>
+        <input name="name" required maxlength={MAX_GROUP_NAME} placeholder="ANU Pickleball" />
+      </label>
+      <label class="field">
+        <span class="field__label">What it's about <span class="field__label--sub">(optional)</span></span>
+        <textarea name="about" maxlength={MAX_GROUP_ABOUT} rows="2" placeholder="Social doubles, all levels. We play Wednesdays."></textarea>
+      </label>
+      <button class="button button--wide">Start group</button>
+    </form>
+  </details>
+
+  {
+    yours.length > 0 && (
+      <section class="section">
+        <div class="section__head">
+          <h2>Your groups</h2>
+          <span class="pill">{yours.length}</span>
+        </div>
+        <ul class="groups">
+          {yours.map((g) => (
+            <li>
+              <a class="groupcard" href={`/groups/${g.id}`}>
+                <span class="groupcard__mark" aria-hidden="true">{g.name.slice(0, 1).toUpperCase()}</span>
+                <span class="groupcard__body">
+                  <span class="groupcard__name">{g.name}</span>
+                  <span class="groupcard__meta">
+                    {g.memberCount} {g.memberCount === 1 ? "member" : "members"}
+                  </span>
+                </span>
+                <span class={`badge badge--role badge--${g.role}`}>{roleLabel[g.role!]}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  <section class="section">
+    <div class="section__head">
+      <h2>{yours.length > 0 ? "More groups" : "All groups"}</h2>
+    </div>
+    {
+      others.length === 0 ? (
+        <p class="empty">{yours.length > 0 ? "You're in every group there is." : "No groups yet. Start the first one."}</p>
+      ) : (
+        <ul class="groups">
+          {others.map((g) => (
+            <li class="groupcard">
+              <a class="groupcard__link" href={`/groups/${g.id}`}>
+                <span class="groupcard__mark" aria-hidden="true">{g.name.slice(0, 1).toUpperCase()}</span>
+                <span class="groupcard__body">
+                  <span class="groupcard__name">{g.name}</span>
+                  <span class="groupcard__meta">
+                    {g.memberCount} {g.memberCount === 1 ? "member" : "members"}
+                    {g.about && ` · ${g.about}`}
+                  </span>
+                </span>
+              </a>
+              <form method="post" action="/api/groups">
+                <input type="hidden" name="action" value="join" />
+                <input type="hidden" name="group" value={g.id} />
+                <button class="button button--small">Join</button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </section>
+</Layout>

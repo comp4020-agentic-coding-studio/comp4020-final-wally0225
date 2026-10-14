@@ -12,9 +12,12 @@ interface Props {
   now: Date;
   personId: string;
   variant: "mine" | "open" | "past";
+  // the groups this person is in; a group's Vybe asks them to join it first
+  groupsIn?: Set<number>;
 }
 
-const { invite, now, personId, variant } = Astro.props;
+const { invite, now, personId, variant, groupsIn = new Set() } = Astro.props;
+const needsGroup = invite.groupId !== null && !groupsIn.has(invite.groupId);
 
 const count = invite.going.length;
 const full = count >= invite.size;
@@ -45,6 +48,13 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
       <span class="datebox__day">{block.day}</span>
     </div>
     <div class="invite__body">
+      {invite.group && (
+        <a class="grouptag" href={`/groups/${invite.groupId}`}>
+          <Icon name="users" />
+          {invite.group}
+          {invite.repeat === "weekly" && <span class="grouptag__repeat">· Weekly</span>}
+        </a>
+      )}
       <div class="invite__head">
         <h3 class="invite__title">{invite.title}</h3>
         <div class="badges">
@@ -106,6 +116,16 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
         {cancelled ? (
           <span class="invite__note">{hosting ? "You called this off" : `${invite.host} called this off`}</span>
         ) : hosting ? (
+          <div class="hostactions">
+          {invite.repeat === "weekly" && (
+            <form method="post" action="/api/join">
+              <input type="hidden" name="invite" value={invite.id} />
+              <input type="hidden" name="action" value="stop-repeat" />
+              <button class="button button--ghost button--small" title="Keep this week's, stop posting the next">
+                Stop weekly
+              </button>
+            </form>
+          )}
           <form method="post" action="/api/cancel" class="cancel">
             <input type="hidden" name="invite" value={invite.id} />
             {/* a second tap confirms, so a stray one can't call it off */}
@@ -117,6 +137,7 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
               </div>
             </details>
           </form>
+          </div>
         ) : (
           <form method="post" action="/api/join">
             <input type="hidden" name="invite" value={invite.id} />
@@ -132,7 +153,14 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
     variant === "open" && (
       <div class="invite__foot">
         <p class="invite__names">Posted by {invite.host}</p>
-        {arrival &&
+        {arrival && needsGroup ? (
+          <form method="post" action="/api/groups" class="join">
+            <input type="hidden" name="action" value="join" />
+            <input type="hidden" name="group" value={invite.groupId} />
+            <input type="hidden" name="then" value={`/#invite-${invite.id}`} />
+            <button class="button button--small button--outline">Join group to join</button>
+          </form>
+        ) : arrival &&
           (onlyOnTime ? (
             <form method="post" action="/api/join" class="join">
               <input type="hidden" name="invite" value={invite.id} />

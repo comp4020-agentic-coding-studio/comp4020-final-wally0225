@@ -1,0 +1,169 @@
+---
+import Avatar from "../../components/Avatar.astro";
+import Icon from "../../components/Icon.astro";
+import InviteCard from "../../components/InviteCard.astro";
+import Layout from "../../layouts/Layout.astro";
+import { listUpcoming } from "../../lib/db";
+import { MAX_GROUP_ABOUT, MAX_GROUP_NAME, canHost, getGroup, listMembers } from "../../lib/groups";
+import { currentPerson } from "../../lib/identity";
+
+// One group: its upcoming Vybes, who's in it and what they can do, and for
+// its owner and hosts, managing it. What a button offers here, the server
+// checks again (src/lib/groups.ts).
+const person = currentPerson(Astro.cookies);
+if (!person) return Astro.redirect("/");
+
+const id = Number(Astro.params.id);
+const group = Number.isInteger(id) ? getGroup(id, person.id) : undefined;
+if (!group) return new Response("No such group", { status: 404 });
+
+const now = new Date();
+const vybes = listUpcoming(now, person.id).filter((i) => i.groupId === group.id);
+const people = listMembers(group.id);
+const owner = group.role === "owner";
+const host = canHost(group.role);
+const groupsIn = new Set(group.role ? [group.id] : []);
+
+const errors: Record<string, string> = {
+  "not-host": "Only the group's hosts can make someone a host.",
+  "not-owner": "Only the group's owner can do that.",
+  owner: "The owner's role can't change, and the owner can't leave.",
+  "not-member": "They're not in the group any more.",
+  name: `Give the group a name (up to ${MAX_GROUP_NAME} characters).`,
+};
+const error = errors[Astro.url.searchParams.get("error") ?? ""];
+const roleLabel = { owner: "Owner", host: "Host", member: "Member" } as const;
+---
+
+<Layout title={`${group.name} · Vybe`} active="groups">
+  <a class="backlink" href="/groups"><Icon name="chevron-left" />Groups</a>
+
+  <section class="grouphero">
+    <span class="grouphero__mark" aria-hidden="true">{group.name.slice(0, 1).toUpperCase()}</span>
+    <div class="grouphero__body">
+      <h1>{group.name}</h1>
+      {group.about && <p class="muted">{group.about}</p>}
+      <p class="grouphero__meta">
+        <Icon name="users" />
+        {group.memberCount} {group.memberCount === 1 ? "member" : "members"}
+        {group.role && <span class={`badge badge--role badge--${group.role}`}>You're {group.role === "member" ? "a member" : `the ${roleLabel[group.role].toLowerCase()}`}</span>}
+      </p>
+    </div>
+    <div class="grouphero__actions">
+      {host && (
+        <a class="button" href={`/?group=${group.id}#post`}><Icon name="plus" />Post a Vybe here</a>
+      )}
+      {!group.role && (
+        <form method="post" action="/api/groups">
+          <input type="hidden" name="action" value="join" />
+          <input type="hidden" name="group" value={group.id} />
+          <button class="button">Join group</button>
+        </form>
+      )}
+      {group.role && !owner && (
+        <form method="post" action="/api/groups">
+          <input type="hidden" name="action" value="leave" />
+          <input type="hidden" name="group" value={group.id} />
+          <button class="button button--ghost">Leave group</button>
+        </form>
+      )}
+    </div>
+  </section>
+
+  {error && <p class="toast" role="alert"><Icon name="alert" />{error}</p>}
+
+  <section class="section">
+    <div class="section__head">
+      <h2>Upcoming</h2>
+      {vybes.length > 0 && <span class="pill">{vybes.length}</span>}
+    </div>
+    {
+      vybes.length === 0 ? (
+        <p class="empty">{host ? "Nothing planned. Post the first Vybe, or a weekly one." : "Nothing planned yet."}</p>
+      ) : (
+        <ul class="invites">
+          {vybes.map((invite) => (
+            <InviteCard
+              invite={invite}
+              now={now}
+              personId={person.id}
+              variant={invite.going.some((g) => g.id === person.id) ? "mine" : "open"}
+              groupsIn={groupsIn}
+            />
+          ))}
+        </ul>
+      )
+    }
+  </section>
+
+  <section class="section">
+    <div class="section__head">
+      <h2>Members</h2>
+      <span class="pill">{people.length}</span>
+    </div>
+    {/* who can do what: owner and hosts post; hosts make hosts; only the owner takes it back or removes */}
+    <ul class="memberlist card">
+      {people.map((m) => (
+        <li class="member">
+          <Avatar name={m.name} />
+          <span class="member__name">
+            {m.name}
+            {m.id === person.id && <span class="muted"> (you)</span>}
+          </span>
+          {m.role !== "member" && <span class={`badge badge--role badge--${m.role}`}>{roleLabel[m.role]}</span>}
+          {m.role === "member" && host && (
+            <form method="post" action="/api/groups">
+              <input type="hidden" name="action" value="role" />
+              <input type="hidden" name="group" value={group.id} />
+              <input type="hidden" name="person" value={m.id} />
+              <input type="hidden" name="role" value="host" />
+              <button class="button button--ghost button--small">Make host</button>
+            </form>
+          )}
+          {m.role === "host" && owner && (
+            <form method="post" action="/api/groups">
+              <input type="hidden" name="action" value="role" />
+              <input type="hidden" name="group" value={group.id} />
+              <input type="hidden" name="person" value={m.id} />
+              <input type="hidden" name="role" value="member" />
+              <button class="button button--ghost button--small">Remove host</button>
+            </form>
+          )}
+          {m.role !== "owner" && owner && (
+            <form method="post" action="/api/groups">
+              <input type="hidden" name="action" value="remove" />
+              <input type="hidden" name="group" value={group.id} />
+              <input type="hidden" name="person" value={m.id} />
+              <button class="button button--ghost button--small member__remove" aria-label={`Remove ${m.name}`} title="Remove from group">
+                Remove
+              </button>
+            </form>
+          )}
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  {
+    owner && (
+      <section class="section">
+        <details class="settings card">
+          <summary>Group settings</summary>
+          <form method="post" action="/api/groups" class="stack">
+            <input type="hidden" name="action" value="update" />
+            <input type="hidden" name="group" value={group.id} />
+            <label class="field">
+              <span class="field__label">Name</span>
+              <input name="name" required maxlength={MAX_GROUP_NAME} value={group.name} />
+            </label>
+            <label class="field">
+              <span class="field__label">What it's about</span>
+              <textarea name="about" maxlength={MAX_GROUP_ABOUT} rows="2">{group.about}</textarea>
+            </label>
+            <button class="button">Save</button>
+          </form>
+        </details>
+      </section>
+    )
+  }
+</Layout>

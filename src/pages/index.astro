@@ -7,11 +7,17 @@ import SortSwitch from "../components/SortSwitch.astro";
 import SpotPicker from "../components/SpotPicker.astro";
 import Layout from "../layouts/Layout.astro";
 import { LATE_CUTOFF_MINUTES, MAX_HOURS, MAX_SIZE, canJoin, listPast, listUpcoming } from "../lib/db";
+import { hostingGroups, listGroups } from "../lib/groups";
 import { currentPerson } from "../lib/identity";
 import { TIME_SLOTS, nextStep, toLocalInput } from "../lib/time";
 
 const person = currentPerson(Astro.cookies);
 const now = new Date();
+// the groups this person is in, and the ones they can post in
+const groupsIn = new Set(person ? listGroups(person.id).filter((g) => g.role).map((g) => g.id) : []);
+const canPostIn = person ? hostingGroups(person.id) : [];
+// "Post a Vybe in this group" on a group's page links here with ?group=
+const presetGroup = Number(Astro.url.searchParams.get("group"));
 const upcoming = person ? listUpcoming(now, person.id) : [];
 const past = person ? listPast(person.id, now) : [];
 const mine = upcoming.filter((i) => i.going.some((g) => g.id === person?.id));
@@ -33,10 +39,12 @@ const errors: Record<string, string> = {
   gone: "Joining that one has closed.",
   arrival: `Pick a time to get there at least ${LATE_CUTOFF_MINUTES} minutes before it ends.`,
   "not-host": "Only the person who posted a Vybe can cancel it.",
+  "not-group-host": "Only a group's hosts can post Vybes in it.",
+  members: "That Vybe is for a group's members. Join the group first, then join the Vybe.",
 };
 const error = errors[Astro.url.searchParams.get("error") ?? ""];
 // a refused post opens the form again, so the reason is next to what to fix
-const postRefused = ["details", "time", "end", "size", "spot"].includes(Astro.url.searchParams.get("error") ?? "");
+const postRefused = ["details", "time", "end", "size", "spot", "not-group-host"].includes(Astro.url.searchParams.get("error") ?? "");
 ---
 
 <Layout title="Vybe" active="invites">
@@ -77,7 +85,7 @@ const postRefused = ["details", "time", "end", "size", "spot"].includes(Astro.ur
         </section>
 
         <div class="toolbar">
-        <details class="post" id="post" open={postRefused}>
+        <details class="post" id="post" open={postRefused || canPostIn.some((g) => g.id === presetGroup)}>
           <summary class="button post__toggle">
             <Icon name="plus" />
             Post a Vybe
@@ -130,6 +138,31 @@ const postRefused = ["details", "time", "end", "size", "spot"].includes(Astro.ur
               <span class="field__label">How many people, you included</span>
               <input name="size" type="number" required min="2" max={MAX_SIZE} value="4" />
             </label>
+            {/* hosts of a group can post in it, and make it a weekly regular */}
+            {canPostIn.length > 0 && (
+              <div class="post__group">
+                <label class="field">
+                  <span class="field__label">Post in</span>
+                  <select name="group" data-post-group>
+                    <option value="">Anyone can join</option>
+                    {canPostIn.map((g) => (
+                      <option value={g.id} selected={g.id === presetGroup}>{g.name} (members only)</option>
+                    ))}
+                  </select>
+                </label>
+                <fieldset class="repeat" data-post-repeat disabled={!canPostIn.some((g) => g.id === presetGroup)}>
+                  <legend class="field__label">How often</legend>
+                  <label class="repeat__option">
+                    <input type="radio" name="repeat" value="once" checked />
+                    <span>One-time</span>
+                  </label>
+                  <label class="repeat__option">
+                    <input type="radio" name="repeat" value="weekly" />
+                    <span><Icon name="repeat" />Every week</span>
+                  </label>
+                </fieldset>
+              </div>
+            )}
             <button class="button button--wide post__submit">Post Vybe</button>
           </form>
         </details>
@@ -156,7 +189,7 @@ const postRefused = ["details", "time", "end", "size", "spot"].includes(Astro.ur
           ) : (
             <ul class="invites">
               {mine.map((invite) => (
-                <InviteCard invite={invite} now={now} personId={person.id} variant="mine" />
+                <InviteCard invite={invite} now={now} personId={person.id} variant="mine" groupsIn={groupsIn} />
               ))}
             </ul>
           )}
@@ -173,7 +206,7 @@ const postRefused = ["details", "time", "end", "size", "spot"].includes(Astro.ur
           ) : (
             <ul class="invites">
               {open.map((invite) => (
-                <InviteCard invite={invite} now={now} personId={person.id} variant="open" />
+                <InviteCard invite={invite} now={now} personId={person.id} variant="open" groupsIn={groupsIn} />
               ))}
             </ul>
           )}
@@ -212,6 +245,14 @@ const postRefused = ["details", "time", "end", "size", "spot"].includes(Astro.ur
         post.open = false;
         post.querySelector("summary")?.focus();
       }
+    });
+    // a Vybe can only repeat in a group
+    const groupSelect = post.querySelector<HTMLSelectElement>("[data-post-group]");
+    const repeat = post.querySelector<HTMLFieldSetElement>("[data-post-repeat]");
+    groupSelect?.addEventListener("change", () => {
+      if (!repeat) return;
+      repeat.disabled = !groupSelect.value;
+      if (!groupSelect.value) repeat.querySelector<HTMLInputElement>('input[value="once"]')!.checked = true;
     });
     // straight to the first field when it opens
     post.addEventListener("toggle", () => {

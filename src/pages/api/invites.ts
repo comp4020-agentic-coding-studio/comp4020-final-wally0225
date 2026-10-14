@@ -1,7 +1,9 @@
 import type { APIRoute } from "astro";
 import { MAX_HOURS, MAX_SIZE, createInvite } from "../../lib/db";
 import { ANU, MAX_KM_FROM_ANU, distanceKm } from "../../lib/geo";
+import { canHost, roleIn } from "../../lib/groups";
 import { currentPerson } from "../../lib/identity";
+import { log } from "../../lib/log";
 import { onStep, parseLocal } from "../../lib/time";
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
@@ -41,6 +43,17 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     return redirect("/?error=spot", 303);
   }
 
-  const invite = createInvite({ hostId: person.id, title, place, startsAt, endsAt, size, lat, lng });
+  // in a group: only its owner and hosts post there, and only there can a
+  // Vybe repeat weekly
+  const groupField = String(form.get("group") ?? "");
+  const groupId = groupField ? Number(groupField) : null;
+  if (groupId !== null && (!Number.isInteger(groupId) || !canHost(roleIn(groupId, person.id)))) {
+    log(person, "refused post", { group: groupField, reason: "not-group-host" });
+    return redirect("/?error=not-group-host", 303);
+  }
+  const repeat = groupId !== null && form.get("repeat") === "weekly" ? "weekly" : "once";
+
+  const invite = createInvite({ hostId: person.id, title, place, startsAt, endsAt, size, lat, lng, groupId, repeat });
+  log(person, "posted", { invite: invite.id, title, group: groupId, repeat });
   return redirect(`/#invite-${invite.id}`, 303);
 };
