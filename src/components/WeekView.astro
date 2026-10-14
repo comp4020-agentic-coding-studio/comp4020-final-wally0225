@@ -1,0 +1,182 @@
+---
+import Icon from "./Icon.astro";
+
+// The week ahead as a calendar: seven days, each with its Vybes, the ones
+// you've joined (or host) in your colour, open ones in teal, full ones grey.
+// Built in the browser from the cards already on the page, like the map, so
+// it's live and the server still decides what each Vybe says. On a phone
+// it's the third view next to List | Map; on a laptop it's its own panel.
+---
+
+<section class="section weekview" aria-labelledby="week-heading" data-week>
+  <div class="weekview__head">
+    <div>
+      <h2 id="week-heading">Your week</h2>
+      <p class="muted weekview__range" data-week-range></p>
+    </div>
+    <div class="weekview__nav">
+      <button type="button" class="weekview__step" data-week-step="-1" aria-label="Previous week"><Icon name="chevron-left" /></button>
+      <button type="button" class="weekview__today" data-week-step="0">This week</button>
+      <button type="button" class="weekview__step" data-week-step="1" aria-label="Next week"><Icon name="chevron-right" /></button>
+    </div>
+  </div>
+
+  <div class="weekview__legend" aria-hidden="true">
+    <span><i class="dot dot--going"></i>Joined</span>
+    <span><i class="dot dot--hosting"></i>Hosting</span>
+    <span><i class="dot dot--open"></i>Open</span>
+    <span><i class="dot dot--full"></i>Full</span>
+  </div>
+
+  {/* seven day columns on a laptop; a day strip and that day's list on a phone */}
+  <div class="weekview__strip" role="tablist" aria-label="Days" data-week-strip></div>
+  <div class="weekview__grid" data-week-grid></div>
+
+  <a class="button button--ghost button--small weekview__ics" href="/api/calendar.ics">
+    <Icon name="download" />Add all my Vybes to my calendar
+  </a>
+</section>
+
+<script>
+  // Canberra's calendar, whatever zone the browser is in
+  const zone = "Australia/Canberra";
+  const dayKey = (t: number) => new Intl.DateTimeFormat("en-CA", { timeZone: zone }).format(t);
+  const fmt = (t: number, o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("en-AU", { timeZone: zone, ...o }).format(t);
+  const DAY = 86_400_000;
+
+  type Item = { id: string; title: string; starts: number; ends: number; state: string; place: string };
+
+  let offset = 0; // weeks from this one
+  let picked = ""; // the day shown on a phone
+
+  function items(): Item[] {
+    const seen = new Set<string>();
+    const out: Item[] = [];
+    for (const card of document.querySelectorAll<HTMLElement>("[data-live] [data-going]")) {
+      if (seen.has(card.id)) continue;
+      seen.add(card.id);
+      out.push({
+        id: card.id,
+        title: card.dataset.title ?? "",
+        starts: Number(card.dataset.starts),
+        ends: Number(card.dataset.ends),
+        state: card.dataset.state ?? "open",
+        place: card.querySelector(".invite__place")?.textContent ?? "",
+      });
+    }
+    return out.sort((a, b) => a.starts - b.starts);
+  }
+
+  // the Monday that starts the week `offset` weeks from now, in Canberra
+  function weekStart(): number {
+    // noon UTC on Canberra's today: safely inside that calendar day
+    const today = new Date(dayKey(Date.now()) + "T12:00:00Z");
+    const sinceMonday = (today.getUTCDay() + 6) % 7;
+    return today.getTime() - sinceMonday * DAY + offset * 7 * DAY;
+  }
+
+  function render() {
+    const grid = document.querySelector<HTMLElement>("[data-week-grid]");
+    const strip = document.querySelector<HTMLElement>("[data-week-strip]");
+    const range = document.querySelector<HTMLElement>("[data-week-range]");
+    if (!grid || !strip || !range) return;
+
+    const start = weekStart();
+    const days = Array.from({ length: 7 }, (_, i) => dayKey(start + i * DAY));
+    const today = dayKey(Date.now());
+    if (!days.includes(picked)) picked = days.includes(today) ? today : days[0];
+    range.textContent = `${fmt(start, { day: "numeric", month: "short" })} – ${fmt(start + 6 * DAY, { day: "numeric", month: "short" })}`;
+
+    const all = items();
+    const on = (day: string) => all.filter((i) => dayKey(i.starts) === day);
+
+    strip.replaceChildren(
+      ...days.map((day) => {
+        const t = new Date(day + "T12:00:00Z").getTime();
+        const b = document.createElement("button");
+        b.type = "button";
+        b.role = "tab";
+        b.className = "weekday";
+        b.dataset.day = day;
+        b.setAttribute("aria-selected", String(day === picked));
+        if (day === today) b.classList.add("weekday--today");
+        const dots = on(day)
+          .slice(0, 3)
+          .map((i) => `<i class="dot dot--${i.state}"></i>`)
+          .join("");
+        b.innerHTML = `<span class="weekday__name">${fmt(t, { weekday: "short" })}</span><span class="weekday__num">${fmt(t, { day: "numeric" })}</span><span class="weekday__dots">${dots}</span>`;
+        return b;
+      }),
+    );
+
+    grid.replaceChildren(
+      ...days.map((day) => {
+        const t = new Date(day + "T12:00:00Z").getTime();
+        const col = document.createElement("div");
+        col.className = "weekcol";
+        col.dataset.day = day;
+        if (day === today) col.classList.add("weekcol--today");
+        if (day === picked) col.classList.add("weekcol--picked");
+        const list = on(day);
+        col.innerHTML =
+          `<div class="weekcol__head"><span>${fmt(t, { weekday: "short" })}</span><b>${fmt(t, { day: "numeric" })}</b></div>` +
+          (list.length === 0
+            ? `<p class="weekcol__empty">Nothing on</p>`
+            : list
+                .map(
+                  (i) =>
+                    `<a class="weekevent weekevent--${i.state}" href="#${i.id}" data-week-event="${i.id}">` +
+                    `<span class="weekevent__time">${fmt(i.starts, { hour: "numeric", minute: "2-digit" })}</span>` +
+                    `<span class="weekevent__title"></span>` +
+                    `<span class="weekevent__place"></span></a>`,
+                )
+                .join(""));
+        // titles and places are people's own words: set as text, never HTML
+        col.querySelectorAll<HTMLElement>("[data-week-event]").forEach((el, n) => {
+          el.querySelector(".weekevent__title")!.textContent = list[n].title;
+          el.querySelector(".weekevent__place")!.textContent = list[n].place;
+        });
+        return col;
+      }),
+    );
+  }
+
+  // jumping to a Vybe from the calendar shows it in the list
+  function reveal(id: string) {
+    const root = document.documentElement;
+    if (root.dataset.view === "week") document.querySelector<HTMLButtonElement>('[data-view-button="list"]')?.click();
+    const card = document.getElementById(id);
+    if (!card) return;
+    card.hidden = false;
+    card.scrollIntoView({ behavior: "smooth", block: "center" });
+    card.classList.add("invite--changed");
+    setTimeout(() => card.classList.remove("invite--changed"), 2500);
+  }
+
+  if (document.querySelector("[data-week]")) {
+    document.addEventListener("click", (e) => {
+      const target = e.target as Element;
+      const step = target.closest<HTMLElement>("[data-week-step]");
+      if (step) {
+        const n = Number(step.dataset.weekStep);
+        offset = n === 0 ? 0 : offset + n;
+        if (n === 0) picked = dayKey(Date.now());
+        render();
+        return;
+      }
+      const day = target.closest<HTMLElement>(".weekday");
+      if (day) {
+        picked = day.dataset.day!;
+        render();
+        return;
+      }
+      const event = target.closest<HTMLElement>("[data-week-event]");
+      if (event) {
+        e.preventDefault();
+        reveal(event.dataset.weekEvent!);
+      }
+    });
+    document.addEventListener("vybe:cards", render);
+    render();
+  }
+</script>

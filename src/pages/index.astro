@@ -3,6 +3,7 @@ import Avatar from "../components/Avatar.astro";
 import Icon from "../components/Icon.astro";
 import InviteCard from "../components/InviteCard.astro";
 import MapView from "../components/MapView.astro";
+import WeekView from "../components/WeekView.astro";
 import SortSwitch from "../components/SortSwitch.astro";
 import SpotPicker from "../components/SpotPicker.astro";
 import Layout from "../layouts/Layout.astro";
@@ -183,6 +184,7 @@ const postRefused = ["details", "time", "end", "size", "spot", "not-group-host"]
         <div class="viewswitch" role="group" aria-label="Show Vybes as">
           <button type="button" class="viewswitch__button" data-view-button="list" aria-pressed="true">List</button>
           <button type="button" class="viewswitch__button" data-view-button="map" aria-pressed="false">Map</button>
+          <button type="button" class="viewswitch__button" data-view-button="week" aria-pressed="false">Week</button>
         </div>
         </div>
 
@@ -190,6 +192,7 @@ const postRefused = ["details", "time", "end", "size", "spot", "not-group-host"]
 
         {/* on a phone, the list or the map; on a laptop, both side by side */}
         <div class="browse">
+        <WeekView />
         <MapView />
 
         <section aria-labelledby="your-plans" class="section" data-live="your-plans">

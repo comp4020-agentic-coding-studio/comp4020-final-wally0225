@@ -237,7 +237,7 @@
     pinFor(cardId)?.classList.toggle("pin--hover", on);
   }
 
-  function show(view: "list" | "map") {
+  function show(view: "list" | "map" | "week") {
     document.documentElement.dataset.view = view;
     for (const button of buttons) button.setAttribute("aria-pressed", String(button.dataset.viewButton === view));
     remember(view);
@@ -254,13 +254,17 @@
       openMap(false);
       reportViewing();
     } else {
-      show(remembered() === "map" ? "map" : "list");
+      const last = remembered();
+      show(last === "map" ? "map" : last === "week" ? "week" : "list");
     }
   }
 
   if (box) {
     for (const button of buttons) {
-      button.addEventListener("click", () => show(button.dataset.viewButton === "map" ? "map" : "list"));
+      button.addEventListener("click", () => {
+        const v = button.dataset.viewButton;
+        show(v === "map" ? "map" : v === "week" ? "week" : "list");
+      });
     }
     // the page swapped in fresh cards (see the live updates in index.astro)
     document.addEventListener("vybe:cards", () => {

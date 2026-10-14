@@ -44,6 +44,9 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
   data-lng={variant === "past" ? undefined : invite.lng}
   data-starts={variant === "past" ? undefined : invite.startsAt.getTime()}
   data-tag={tag}
+  data-ends={variant === "past" ? undefined : (invite.endsAt ?? invite.startsAt).getTime()}
+  data-title={variant === "past" ? undefined : invite.title}
+  data-state={variant === "past" ? undefined : cancelled ? "cancelled" : variant === "mine" ? (hosting ? "hosting" : "going") : full ? "full" : "open"}
 >
   <div class="invite__main">
     <div class="datebox" aria-hidden="true">
@@ -125,6 +128,11 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
         <p class="invite__names">
           {invite.going.map((g) => (g.arrivesAt ? `${g.name} (from ${formatClock(g.arrivesAt)})` : g.name)).join(", ")}
         </p>
+        {!cancelled && (
+          <a class="icalink" href={`/api/calendar.ics?invite=${invite.id}`} title="Add to my calendar" aria-label={`Add ${invite.title} to my calendar`}>
+            <Icon name="calendar" />
+          </a>
+        )}
         {cancelled ? (
           <span class="invite__note">{hosting ? "You called this off" : `${invite.host} called this off`}</span>
         ) : hosting ? (
