@@ -1,7 +1,7 @@
 ---
 import Icon from "../../components/Icon.astro";
 import Layout from "../../layouts/Layout.astro";
-import { MAX_GROUP_ABOUT, MAX_GROUP_NAME, listGroups } from "../../lib/groups";
+import { MAX_GROUP_ABOUT, MAX_GROUP_NAME, groupHue, listGroups } from "../../lib/groups";
 import { currentPerson } from "../../lib/identity";
 
 // Every group, yours first. Anyone can start one and anyone can join.
@@ -51,7 +51,7 @@ const roleLabel = { owner: "Owner", host: "Host", member: "Member" } as const;
         <ul class="groups">
           {yours.map((g) => (
             <li>
-              <a class="groupcard" href={`/groups/${g.id}`}>
+              <a class="groupcard" href={`/groups/${g.id}`} style={`--hue: ${groupHue(g.name)}`}>
                 <span class="groupcard__mark" aria-hidden="true">{g.name.slice(0, 1).toUpperCase()}</span>
                 <span class="groupcard__body">
                   <span class="groupcard__name">{g.name}</span>
@@ -78,7 +78,7 @@ const roleLabel = { owner: "Owner", host: "Host", member: "Member" } as const;
       ) : (
         <ul class="groups">
           {others.map((g) => (
-            <li class="groupcard">
+            <li class="groupcard" style={`--hue: ${groupHue(g.name)}`}>
               <a class="groupcard__link" href={`/groups/${g.id}`}>
                 <span class="groupcard__mark" aria-hidden="true">{g.name.slice(0, 1).toUpperCase()}</span>
                 <span class="groupcard__body">

@@ -149,3 +149,16 @@ export function updateGroup(groupId: number, actorId: string, name: string, abou
   db.update(groups).set({ name, about }).where(eq(groups.id, groupId)).run();
   return "updated";
 }
+
+// Each group's own colour, from its name, so groups are easy to tell apart
+// at a glance: a hue for the cover, the mark and the accents.
+export function groupHue(name: string): number {
+  // FNV-1a picks one of twelve well-spaced hues, so two groups rarely look
+  // alike and no group lands on a muddy in-between colour
+  let hash = 2166136261;
+  for (const ch of name) hash = Math.imul(hash ^ ch.codePointAt(0)!, 16777619) >>> 0;
+  const palette = [8, 28, 45, 95, 140, 205, 220, 245, 265, 285, 315, 340];
+  const h = palette[hash % palette.length];
+  // skip the band nearest the app's teal, so a group never looks like a Vybe
+  return h >= 160 && h < 190 ? (h + 60) % 360 : h;
+}

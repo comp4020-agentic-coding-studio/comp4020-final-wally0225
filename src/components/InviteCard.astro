@@ -1,5 +1,6 @@
 ---
 import { type InviteView, arrivalOptions } from "../lib/db";
+import { groupHue } from "../lib/groups";
 import { TAGS, isTag } from "../lib/tags";
 import { dateBlock, formatClock, formatTimes } from "../lib/time";
 import Avatar from "./Avatar.astro";
@@ -62,7 +63,7 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
             </span>
           )}
       {invite.group && (
-        <a class="grouptag" href={`/groups/${invite.groupId}`}>
+        <a class="grouptag" href={`/groups/${invite.groupId}`} style={`--hue: ${groupHue(invite.group)}`}>
           <Icon name="users" />
           {invite.group}
           {invite.repeat === "weekly" && <span class="grouptag__repeat">· Weekly</span>}

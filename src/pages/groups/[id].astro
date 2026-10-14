@@ -4,7 +4,7 @@ import Icon from "../../components/Icon.astro";
 import InviteCard from "../../components/InviteCard.astro";
 import Layout from "../../layouts/Layout.astro";
 import { listUpcoming } from "../../lib/db";
-import { MAX_GROUP_ABOUT, MAX_GROUP_NAME, canHost, getGroup, listMembers } from "../../lib/groups";
+import { MAX_GROUP_ABOUT, MAX_GROUP_NAME, canHost, getGroup, groupHue, listMembers } from "../../lib/groups";
 import { currentPerson } from "../../lib/identity";
 
 // One group: its upcoming Vybes, who's in it and what they can do, and for
@@ -33,46 +33,66 @@ const errors: Record<string, string> = {
 };
 const error = errors[Astro.url.searchParams.get("error") ?? ""];
 const roleLabel = { owner: "Owner", host: "Host", member: "Member" } as const;
+const hue = groupHue(group.name);
+const hosts = people.filter((m) => m.role !== "member").length;
+const weekly = vybes.filter((i) => i.repeat === "weekly").length;
+const faces = people.slice(0, 5);
 ---
 
 <Layout title={`${group.name} · Vybe`} active="groups">
   <a class="backlink" href="/groups"><Icon name="chevron-left" />Groups</a>
 
-  <section class="grouphero">
-    <span class="grouphero__mark" aria-hidden="true">{group.name.slice(0, 1).toUpperCase()}</span>
-    <div class="grouphero__body">
-      <h1>{group.name}</h1>
-      {group.about && <p class="muted">{group.about}</p>}
-      <p class="grouphero__meta">
-        <Icon name="users" />
-        {group.memberCount} {group.memberCount === 1 ? "member" : "members"}
-        {group.role && <span class={`badge badge--role badge--${group.role}`}>You're {group.role === "member" ? "a member" : `the ${roleLabel[group.role].toLowerCase()}`}</span>}
-      </p>
+  <section class="ghero" style={`--hue: ${hue}`}>
+    <div class="ghero__cover" aria-hidden="true"></div>
+    <div class="ghero__main">
+      <span class="ghero__mark" aria-hidden="true">{group.name.slice(0, 1).toUpperCase()}</span>
+      <div class="ghero__body">
+        <h1>{group.name}</h1>
+        {group.about && <p class="ghero__about">{group.about}</p>}
+        {group.role && (
+          <span class={`badge badge--role badge--${group.role}`}>
+            You're {group.role === "member" ? "a member" : `the ${roleLabel[group.role].toLowerCase()}`}
+          </span>
+        )}
+      </div>
+      <div class="ghero__actions">
+        {host && (
+          <a class="button" href={`/?group=${group.id}#post`}><Icon name="plus" />Post a Vybe here</a>
+        )}
+        {!group.role && (
+          <form method="post" action="/api/groups">
+            <input type="hidden" name="action" value="join" />
+            <input type="hidden" name="group" value={group.id} />
+            <button class="button">Join group</button>
+          </form>
+        )}
+        {group.role && !owner && (
+          <form method="post" action="/api/groups">
+            <input type="hidden" name="action" value="leave" />
+            <input type="hidden" name="group" value={group.id} />
+            <button class="button button--ghost">Leave group</button>
+          </form>
+        )}
+      </div>
     </div>
-    <div class="grouphero__actions">
-      {host && (
-        <a class="button" href={`/?group=${group.id}#post`}><Icon name="plus" />Post a Vybe here</a>
-      )}
-      {!group.role && (
-        <form method="post" action="/api/groups">
-          <input type="hidden" name="action" value="join" />
-          <input type="hidden" name="group" value={group.id} />
-          <button class="button">Join group</button>
-        </form>
-      )}
-      {group.role && !owner && (
-        <form method="post" action="/api/groups">
-          <input type="hidden" name="action" value="leave" />
-          <input type="hidden" name="group" value={group.id} />
-          <button class="button button--ghost">Leave group</button>
-        </form>
-      )}
+    <div class="ghero__foot">
+      <dl class="gstats">
+        <div><dt>Members</dt><dd>{group.memberCount}</dd></div>
+        <div><dt>Upcoming</dt><dd>{vybes.length}</dd></div>
+        <div><dt>Hosts</dt><dd>{hosts}</dd></div>
+        <div><dt>Weekly</dt><dd>{weekly}</dd></div>
+      </dl>
+      <div class="ghero__faces avatars" aria-hidden="true">
+        {faces.map((m) => <Avatar name={m.name} />)}
+        {people.length > faces.length && <span class="avatar avatar--more">+{people.length - faces.length}</span>}
+      </div>
     </div>
   </section>
 
   {error && <p class="toast" role="alert"><Icon name="alert" />{error}</p>}
 
-  <section class="section">
+  <div class="glayout" style={`--hue: ${hue}`}>
+  <section class="section glayout__main">
     <div class="section__head">
       <h2>Upcoming</h2>
       {vybes.length > 0 && <span class="pill">{vybes.length}</span>}
@@ -96,6 +116,7 @@ const roleLabel = { owner: "Owner", host: "Host", member: "Member" } as const;
     }
   </section>
 
+  <aside class="glayout__side">
   <section class="section">
     <div class="section__head">
       <h2>Members</h2>
@@ -109,8 +130,9 @@ const roleLabel = { owner: "Owner", host: "Host", member: "Member" } as const;
           <span class="member__name">
             {m.name}
             {m.id === person.id && <span class="muted"> (you)</span>}
+            {m.role !== "member" && <span class={`badge badge--role badge--${m.role}`}>{roleLabel[m.role]}</span>}
           </span>
-          {m.role !== "member" && <span class={`badge badge--role badge--${m.role}`}>{roleLabel[m.role]}</span>}
+          <span class="member__actions">
           {m.role === "member" && host && (
             <form method="post" action="/api/groups">
               <input type="hidden" name="action" value="role" />
@@ -139,6 +161,7 @@ const roleLabel = { owner: "Owner", host: "Host", member: "Member" } as const;
               </button>
             </form>
           )}
+          </span>
         </li>
       ))}
     </ul>
@@ -166,4 +189,6 @@ const roleLabel = { owner: "Owner", host: "Host", member: "Member" } as const;
       </section>
     )
   }
+  </aside>
+  </div>
 </Layout>

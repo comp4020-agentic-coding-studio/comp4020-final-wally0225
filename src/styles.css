@@ -1201,7 +1201,9 @@ select {
   font-size: 0.88rem;
   color: var(--muted);
   min-width: 0;
+  /* takes the free space, so the actions after it pack to the right */
   flex: 1 1 8rem;
+  margin-right: auto;
 }
 
 /* a card that just changed, briefly, so the eye finds it */
@@ -1369,8 +1371,8 @@ select {
   width: fit-content;
   padding: 0.1rem 0.55rem 0.1rem 0.4rem;
   border-radius: 999px;
-  background: #ede9fe;
-  color: #5b21b6;
+  background: hsl(var(--hue, 262) 85% 94%);
+  color: hsl(var(--hue, 262) 60% 34%);
   font-size: 0.75rem;
   font-weight: 700;
   text-decoration: none;
@@ -1396,6 +1398,10 @@ select {
 
 .pagehead {
   margin-bottom: 1rem;
+}
+
+.pagehead h1 {
+  font-size: clamp(1.7rem, 4vw, 2.2rem);
 }
 
 .post__form--simple {
@@ -1442,9 +1448,40 @@ textarea {
   flex: 1;
 }
 
+.groupcard {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+/* a soft wash of the group's colour behind the card, strongest at the mark */
+.groupcard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 0% 50%, hsl(var(--hue, 265) 90% 70% / 0.22), transparent 55%),
+    linear-gradient(90deg, hsl(var(--hue, 265) 80% 97%), var(--surface) 60%);
+  pointer-events: none;
+}
+
+.groupcard > * {
+  position: relative;
+}
+
+.groupcard__mark {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 16px;
+  box-shadow: 0 6px 14px hsl(var(--hue, 265) 60% 40% / 0.25);
+}
+
 a.groupcard:hover,
 .groupcard:has(.groupcard__link:hover) {
-  border-color: var(--accent-2);
+  border-color: hsl(var(--hue, 265) 60% 75%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgb(15 23 42 / 0.05), 0 10px 24px rgb(15 23 42 / 0.08);
 }
 
 .groupcard__mark,
@@ -1455,7 +1492,7 @@ a.groupcard:hover,
   width: 2.75rem;
   height: 2.75rem;
   border-radius: 14px;
-  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  background: linear-gradient(135deg, hsl(var(--hue, 265) 70% 45%), hsl(calc(var(--hue, 265) - 20) 80% 65%));
   color: #fff;
   font-weight: 800;
   font-size: 1.15rem;
@@ -1662,7 +1699,12 @@ a.groupcard:hover,
   justify-content: flex-end;
   align-items: flex-start;
   gap: 0.5rem;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
+}
+
+/* the open "call it off?" row takes the footer's full width */
+.hostactions:has(.cancel__confirm[open]) {
+  flex-basis: 100%;
 }
 
 .hostactions .cancel__confirm {
@@ -2162,4 +2204,239 @@ a.groupcard:hover,
   .weekevent__place {
     display: none;
   }
+}
+
+/* --- group page ----------------------------------------------------------- */
+
+.ghero {
+  --tint: hsl(var(--hue) 70% 55%);
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid hsl(var(--hue) 40% 88%);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 16px 40px hsl(var(--hue) 40% 40% / 0.12);
+}
+
+/* the cover: the group's colour in soft overlapping glows over a fine dot grid */
+.ghero__cover {
+  height: 7.5rem;
+  background:
+    radial-gradient(circle at 15% 20%, hsl(var(--hue) 90% 70% / 0.9), transparent 45%),
+    radial-gradient(circle at 85% 0%, hsl(calc(var(--hue) - 25) 90% 72% / 0.85), transparent 50%),
+    radial-gradient(circle at 60% 120%, hsl(calc(var(--hue) - 30) 85% 60% / 0.8), transparent 55%),
+    radial-gradient(rgb(255 255 255 / 0.35) 1px, transparent 1.2px) 0 0 / 14px 14px,
+    linear-gradient(135deg, hsl(var(--hue) 70% 50%), hsl(calc(var(--hue) - 25) 75% 60%));
+}
+
+/* only the mark overlaps the cover; the name and actions sit below it */
+.ghero__main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem 1.25rem;
+  padding: 0 1.25rem;
+}
+
+.ghero__mark {
+  margin-top: -2.5rem;
+}
+
+.ghero__body {
+  padding-top: 0.85rem;
+}
+
+.ghero__actions {
+  padding-top: 0.85rem;
+}
+
+@media (max-width: 40rem) {
+  .ghero__body,
+  .ghero__actions {
+    padding-top: 0;
+  }
+
+  .ghero__body {
+    flex-basis: 100%;
+  }
+}
+
+.ghero__mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 5rem;
+  height: 5rem;
+  border-radius: 24px;
+  border: 4px solid var(--surface);
+  background: linear-gradient(135deg, hsl(var(--hue) 70% 42%), hsl(calc(var(--hue) - 20) 80% 62%));
+  box-shadow: 0 8px 20px hsl(var(--hue) 60% 35% / 0.3);
+  color: #fff;
+  font-size: 2.1rem;
+  font-weight: 800;
+}
+
+.ghero__body {
+  flex: 1 1 16rem;
+  min-width: 0;
+  display: grid;
+  gap: 0.35rem;
+  justify-items: start;
+  padding-bottom: 0.1rem;
+}
+
+.ghero__body h1 {
+  margin: 0;
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+.ghero__about {
+  margin: 0;
+  color: var(--muted);
+  max-width: 40rem;
+}
+
+.ghero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-bottom: 0.25rem;
+}
+
+.ghero__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding: 0.9rem 1.25rem 1rem;
+  border-top: 1px solid var(--line);
+  background: hsl(var(--hue) 60% 98%);
+}
+
+.gstats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.75rem;
+  margin: 0;
+}
+
+.gstats div {
+  display: grid;
+}
+
+.gstats dt {
+  order: 2;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.gstats dd {
+  order: 1;
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: hsl(var(--hue) 55% 32%);
+}
+
+.ghero__faces .avatar {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-width: 3px;
+}
+
+/* the owner's badge takes the group's colour */
+.ghero .badge--owner,
+.glayout .badge--owner,
+.groupcard .badge--owner {
+  background: hsl(var(--hue) 80% 94%);
+  color: hsl(var(--hue) 60% 32%);
+}
+
+/* upcoming on the left; members and settings in a sidebar on laptops */
+.glayout {
+  display: grid;
+  gap: 0 2rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.glayout__side > .section:first-child {
+  margin-top: 2rem;
+}
+
+@media (min-width: 60rem) {
+  .glayout {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    align-items: start;
+  }
+
+  .glayout__side {
+    position: sticky;
+    top: 5rem;
+  }
+}
+
+.memberlist {
+  padding: 0.35rem 1rem;
+  border-radius: 20px;
+}
+
+.member__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.member__actions {
+  display: flex;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.member__actions:empty {
+  display: none;
+}
+
+.settings {
+  border-radius: 20px;
+}
+
+.settings > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings > summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings > summary::after {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 0.15s ease;
+}
+
+.settings[open] > summary::after {
+  transform: rotate(-135deg) translateY(-2px);
+}
+
+.glayout__main .empty {
+  padding: 2.5rem 1rem;
+  background: hsl(var(--hue) 60% 98%);
+  border-color: hsl(var(--hue) 40% 86%);
 }
