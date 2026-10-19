@@ -78,3 +78,32 @@ it("lets a host make a member a host, and only the owner take it back", async ()
   const after = await postIn(ana, group, "Spec check: no longer a host");
   expect(after.headers.get("location")).toMatch(/error=not-group-host/);
 });
+
+it("gives every group a cover picture, and only its owner can change it", async () => {
+  const owner = await person("Owner");
+  const group = await startGroup(owner, "Spec check: covers");
+  const member = await person("Member");
+  await joinGroup(member, group);
+  const cover = async () =>
+    (await (await fetch(`${baseUrl}/groups/${group}`, { headers: { cookie: member } })).text()).match(
+      /\/covers\/(\w+)\.svg/,
+    )?.[1];
+
+  // a new group already has one, and the picture is really there
+  const first = await cover();
+  expect(first).toBeDefined();
+  expect((await fetch(`${baseUrl}/covers/${first}.svg`)).ok).toBe(true);
+
+  const pick = first === "music" ? "games" : "music";
+  const update = (who: string, picked: string) =>
+    post("/api/groups", { action: "update", group, name: "Spec check: covers", about: "", cover: picked }, who);
+
+  expect((await update(member, pick)).headers.get("location")).toMatch(/error=not-owner/);
+  expect(await cover()).toBe(first);
+
+  // only the pictures Vybe ships, never an address someone typed in
+  expect((await update(owner, "https://example.com/x")).headers.get("location")).toMatch(/error=cover/);
+
+  await update(owner, pick);
+  expect(await cover()).toBe(pick);
+});
