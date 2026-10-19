@@ -1389,13 +1389,6 @@ select {
 }
 
 .pagehead h1,
-.grouphero h1 {
-  margin: 0;
-  font-size: 1.6rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
 .pagehead {
   margin-bottom: 1rem;
 }
@@ -1417,78 +1410,61 @@ textarea {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.6rem;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
 }
 
-@media (min-width: 48rem) {
-  .groups {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.groupcard,
-.groupcard__link {
+/* a group as a card: its cover picture, its mark overlapping it, then who
+   and what it is */
+.groupcard {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 0.8rem;
+  flex-direction: column;
   min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.groupcard:has(.groupcard__link:hover) {
+  border-color: hsl(var(--hue, 265) 60% 78%);
+  transform: translateY(-3px);
+  box-shadow: 0 2px 4px rgb(15 23 42 / 0.05), 0 18px 36px hsl(var(--hue, 265) 50% 35% / 0.16);
+}
+
+.groupcard__link {
+  display: grid;
+  flex: 1;
   color: inherit;
   text-decoration: none;
 }
 
-.groupcard {
-  padding: 0.8rem 0.9rem;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
-.groupcard__link {
-  flex: 1;
-}
-
-.groupcard {
-  position: relative;
+.groupcard__cover {
+  display: block;
+  aspect-ratio: 2 / 1;
   overflow: hidden;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+  background: hsl(var(--hue, 265) 60% 92%);
 }
 
-/* a soft wash of the group's colour behind the card, strongest at the mark */
-.groupcard::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background:
-    radial-gradient(circle at 0% 50%, hsl(var(--hue, 265) 90% 70% / 0.22), transparent 55%),
-    linear-gradient(90deg, hsl(var(--hue, 265) 80% 97%), var(--surface) 60%);
-  pointer-events: none;
+.groupcard__cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
 }
 
-.groupcard > * {
-  position: relative;
+.groupcard:has(.groupcard__link:hover) .groupcard__cover img {
+  transform: scale(1.05);
 }
 
 .groupcard__mark {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 16px;
-  box-shadow: 0 6px 14px hsl(var(--hue, 265) 60% 40% / 0.25);
-}
-
-a.groupcard:hover,
-.groupcard:has(.groupcard__link:hover) {
-  border-color: hsl(var(--hue, 265) 60% 75%);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgb(15 23 42 / 0.05), 0 10px 24px rgb(15 23 42 / 0.08);
-}
-
-.groupcard__mark,
-.grouphero__mark {
+  position: relative;
   display: grid;
   place-items: center;
-  flex: none;
   width: 2.75rem;
   height: 2.75rem;
   border-radius: 14px;
@@ -1496,24 +1472,51 @@ a.groupcard:hover,
   color: #fff;
   font-weight: 800;
   font-size: 1.15rem;
+  margin: -1.6rem 0 0 1rem;
+  border: 3px solid var(--surface);
+  box-shadow: 0 6px 14px hsl(var(--hue, 265) 60% 40% / 0.3);
 }
 
 .groupcard__body {
   display: grid;
+  gap: 0.2rem;
   min-width: 0;
-  flex: 1;
+  padding: 0.5rem 1rem 0.75rem;
 }
 
 .groupcard__name {
-  font-weight: 700;
+  font-size: 1.08rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+
+.groupcard__about {
+  color: var(--muted);
+  font-size: 0.88rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.groupcard__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding: 0.65rem 1rem;
+  border-top: 1px solid var(--line);
+  background: hsl(var(--hue, 265) 60% 98%);
 }
 
 .groupcard__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   color: var(--muted);
   font-size: 0.85rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-weight: 600;
 }
 
 .badge--role {
@@ -1540,76 +1543,6 @@ a.groupcard:hover,
   font-weight: 600;
   font-size: 0.9rem;
   text-decoration: none;
-}
-
-.grouphero {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.25rem;
-  border-radius: 24px;
-  background: linear-gradient(135deg, #f5f3ff, var(--surface) 70%);
-  border: 1px solid #e9e3ff;
-  box-shadow: var(--shadow);
-}
-
-.grouphero__mark {
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 18px;
-  font-size: 1.5rem;
-}
-
-.grouphero__body {
-  flex: 1 1 14rem;
-  min-width: 0;
-}
-
-.grouphero__body .muted {
-  margin-top: 0.25rem;
-}
-
-.grouphero__meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem;
-  margin: 0.5rem 0 0;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-.grouphero__actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.memberlist {
-  list-style: none;
-  margin: 0;
-  padding: 0.35rem 0.9rem;
-}
-
-.member {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.6rem 0;
-}
-
-.member + .member {
-  border-top: 1px solid var(--line);
-}
-
-.member__name {
-  flex: 1;
-  min-width: 0;
-  font-weight: 600;
-}
-
-.member__remove:hover {
-  color: var(--danger);
 }
 
 .settings > summary {
@@ -1713,21 +1646,6 @@ a.groupcard:hover,
 
 .hostactions:has(.cancel__confirm[open]) .cancel__confirm {
   flex: 1 1 100%;
-}
-
-/* member rows: the name keeps its room; actions wrap under it if they must */
-.member {
-  flex-wrap: wrap;
-}
-
-.member__name {
-  flex: 1 1 6rem;
-}
-
-.member form .button--small {
-  min-height: 2rem;
-  padding: 0.3rem 0.75rem;
-  font-size: 0.82rem;
 }
 
 /* --- tags ----------------------------------------------------------------- */
@@ -2218,15 +2136,27 @@ a.groupcard:hover,
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 16px 40px hsl(var(--hue) 40% 40% / 0.12);
 }
 
-/* the cover: the group's colour in soft overlapping glows over a fine dot grid */
+/* the cover: the group's picture, with its colour washed over the bottom so
+   the mark sits on it cleanly */
 .ghero__cover {
-  height: 7.5rem;
-  background:
-    radial-gradient(circle at 15% 20%, hsl(var(--hue) 90% 70% / 0.9), transparent 45%),
-    radial-gradient(circle at 85% 0%, hsl(calc(var(--hue) - 25) 90% 72% / 0.85), transparent 50%),
-    radial-gradient(circle at 60% 120%, hsl(calc(var(--hue) - 30) 85% 60% / 0.8), transparent 55%),
-    radial-gradient(rgb(255 255 255 / 0.35) 1px, transparent 1.2px) 0 0 / 14px 14px,
-    linear-gradient(135deg, hsl(var(--hue) 70% 50%), hsl(calc(var(--hue) - 25) 75% 60%));
+  position: relative;
+  height: clamp(9rem, 26vw, 15rem);
+  overflow: hidden;
+  background: hsl(var(--hue) 60% 90%);
+}
+
+.ghero__cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ghero__cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, hsl(var(--hue) 50% 20% / 0.28));
 }
 
 /* only the mark overlaps the cover; the name and actions sit below it */
@@ -2239,6 +2169,7 @@ a.groupcard:hover,
 }
 
 .ghero__mark {
+  position: relative;
   margin-top: -2.5rem;
 }
 
@@ -2329,6 +2260,12 @@ a.groupcard:hover,
   display: grid;
 }
 
+@media (max-width: 40rem) {
+  .gstats {
+    column-gap: 1.1rem;
+  }
+}
+
 .gstats dt {
   order: 2;
   color: var(--muted);
@@ -2384,26 +2321,203 @@ a.groupcard:hover,
   }
 }
 
-.memberlist {
-  padding: 0.35rem 1rem;
-  border-radius: 20px;
+/* members as small cards: a big avatar, the name, the role, and what you can
+   do about them */
+.membergrid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
 }
 
-.member__name {
+.mcard {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 0.35rem;
+  padding: 1rem 0.6rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.mcard--owner,
+.mcard--host {
+  background: linear-gradient(180deg, hsl(var(--hue) 70% 96%), var(--surface) 60%);
+  border-color: hsl(var(--hue) 45% 86%);
+}
+
+.mcard .avatar--large {
+  width: 3.5rem;
+  height: 3.5rem;
+  font-size: 1.35rem;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 0.1);
+}
+
+.mcard__name {
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.mcard__name .muted {
+  font-weight: 500;
+}
+
+.mcard__actions {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem;
+  justify-content: center;
+  gap: 0.3rem;
+  margin-top: 0.25rem;
 }
 
-.member__actions {
-  display: flex;
-  gap: 0.35rem;
-  margin-left: auto;
-}
-
-.member__actions:empty {
+.mcard__actions:empty {
   display: none;
+}
+
+.mcard__actions .button--small {
+  min-height: 1.9rem;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.78rem;
+}
+
+/* the owner's remove: a small cross in the corner, red when you mean it */
+.mcard {
+  position: relative;
+}
+
+.mcard__remove {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+}
+
+.iconbutton {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.iconbutton .icon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.iconbutton:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* on a picture card the names get their own line, so the host's buttons
+   keep theirs together */
+.invites--cards .invite__foot > .invite__names {
+  flex-basis: 100%;
+}
+
+/* Upcoming as picture cards, two across where there's room */
+.invites--cards {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.invite--cover {
+  padding-top: 0;
+  overflow: hidden;
+}
+
+.invite__cover {
+  margin: 0 -1rem;
+  height: 8rem;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.invite__cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* the date block sits on the picture's bottom edge, like a ticket stub */
+.invite--cover .datebox {
+  margin-top: -2.2rem;
+  position: relative;
+  background: var(--surface);
+  border: 3px solid var(--surface);
+  box-shadow: 0 6px 16px rgb(15 23 42 / 0.14);
+}
+
+.invite--cover.invite--cancelled .invite__cover img {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+/* the owner picks a cover from the pictures Vybe ships */
+.coverpick {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.coverpick__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.coverpick__option {
+  position: relative;
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  font-weight: 650;
+  text-align: center;
+  cursor: pointer;
+}
+
+.coverpick__option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.coverpick__option img {
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  box-shadow: 0 0 0 1px var(--line);
+  transition: border-color 0.12s ease, transform 0.12s ease;
+}
+
+.coverpick__option:hover img {
+  transform: translateY(-1px);
+}
+
+.coverpick__option input:checked + img {
+  border-color: var(--surface);
+  box-shadow: 0 0 0 3px hsl(var(--hue) 65% 45%);
+}
+
+.coverpick__option input:focus-visible + img {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .settings {

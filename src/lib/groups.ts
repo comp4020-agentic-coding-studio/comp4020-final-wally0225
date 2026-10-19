@@ -1,6 +1,7 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "./db";
 import { type Group, type Role, groups, members, people } from "./schema";
+import { TAGS, type Tag, isTag } from "./tags";
 
 // Groups and who can do what in them. Every rule here is the server's: the
 // page only offers what these allow, and the API asks these before acting.
@@ -143,11 +144,40 @@ export function removeMember(groupId: number, actorId: string, personId: string)
   return "removed";
 }
 
-// The owner can rename the group and change what it says about itself.
-export function updateGroup(groupId: number, actorId: string, name: string, about: string): "updated" | "not-owner" {
+// The owner can rename the group, change what it says about itself and pick
+// its cover.
+export function updateGroup(
+  groupId: number,
+  actorId: string,
+  name: string,
+  about: string,
+  cover: Cover | null,
+): "updated" | "not-owner" {
   if (roleIn(groupId, actorId) !== "owner") return "not-owner";
-  db.update(groups).set({ name, about }).where(eq(groups.id, groupId)).run();
+  db.update(groups).set({ name, about, cover }).where(eq(groups.id, groupId)).run();
   return "updated";
+}
+
+// The pictures a group can wear, one per kind of Vybe (src/lib/tags.ts),
+// drawn for Vybe and served from public/covers: nothing hotlinked, nothing
+// uploaded, so nobody's photo ends up somewhere they didn't put it.
+export const COVERS = Object.keys(TAGS) as Cover[];
+export type Cover = Tag;
+export const isCover = isTag;
+
+// The owner's pick, or until they make one, a cover chosen from the name
+// the same way its colour is, so a new group already has a picture.
+export function coverOf(group: { name: string; cover: string | null }): Cover {
+  if (group.cover && isCover(group.cover)) return group.cover;
+  return COVERS[nameHash(group.name) % COVERS.length];
+}
+
+export const coverUrl = (cover: Cover) => `/covers/${cover}.svg`;
+
+function nameHash(name: string): number {
+  let hash = 2166136261;
+  for (const ch of name) hash = Math.imul(hash ^ ch.codePointAt(0)!, 16777619) >>> 0;
+  return hash;
 }
 
 // Each group's own colour, from its name, so groups are easy to tell apart
@@ -155,10 +185,8 @@ export function updateGroup(groupId: number, actorId: string, name: string, abou
 export function groupHue(name: string): number {
   // FNV-1a picks one of twelve well-spaced hues, so two groups rarely look
   // alike and no group lands on a muddy in-between colour
-  let hash = 2166136261;
-  for (const ch of name) hash = Math.imul(hash ^ ch.codePointAt(0)!, 16777619) >>> 0;
   const palette = [8, 28, 45, 95, 140, 205, 220, 245, 265, 285, 315, 340];
-  const h = palette[hash % palette.length];
+  const h = palette[nameHash(name) % palette.length];
   // skip the band nearest the app's teal, so a group never looks like a Vybe
   return h >= 160 && h < 190 ? (h + 60) % 360 : h;
 }

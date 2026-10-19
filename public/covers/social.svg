@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 320">
+  <defs>
+    <linearGradient id="dusk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4b3a9a"/><stop offset=".6" stop-color="#b65ba6"/><stop offset="1" stop-color="#f6a07a"/></linearGradient>
+    <radialGradient id="bulb"><stop offset="0" stop-color="#fff7c2"/><stop offset=".35" stop-color="#ffd166" stop-opacity=".9"/><stop offset="1" stop-color="#ffd166" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="640" height="320" fill="url(#dusk)"/>
+  <g fill="#fff" opacity=".8"><circle cx="80" cy="40" r="1.6"/><circle cx="220" cy="22" r="1.2"/><circle cx="430" cy="34" r="1.5"/><circle cx="580" cy="20" r="1.2"/><circle cx="330" cy="60" r="1"/></g>
+  <path d="M0 260h40v-70h50v40h40v-90h60v120h30v-60h70v80h40v-110h50v110h40v-50h60v70h40v-80h50v60h40v100H0z" fill="#2a2152" opacity=".55"/>
+  <path d="M-10 60q160 90 330 20t340 30" fill="none" stroke="#2a2152" stroke-width="2.5"/>
+  <g>
+    <circle cx="40" cy="92" r="22" fill="url(#bulb)"/><circle cx="110" cy="114" r="22" fill="url(#bulb)"/><circle cx="180" cy="116" r="22" fill="url(#bulb)"/><circle cx="250" cy="102" r="22" fill="url(#bulb)"/><circle cx="320" cy="82" r="22" fill="url(#bulb)"/><circle cx="390" cy="72" r="22" fill="url(#bulb)"/><circle cx="460" cy="76" r="22" fill="url(#bulb)"/><circle cx="530" cy="88" r="22" fill="url(#bulb)"/><circle cx="600" cy="102" r="22" fill="url(#bulb)"/>
+  </g>
+  <g fill="#ef476f"><path d="M70 40l14 28h-28z" transform="rotate(14 70 54)"/><path d="M500 40l12 26h-24z" transform="rotate(-10 500 52)"/></g>
+  <g fill="#ffd166"><path d="M140 38l12 26h-24z" transform="rotate(8 140 50)"/><path d="M570 54l12 26h-24z"/></g>
+  <g fill="#06d6a0"><path d="M420 30l12 26h-24z" transform="rotate(-6 420 42)"/><path d="M210 50l12 26h-24z" transform="rotate(12 210 62)"/></g>
+  <g>
+    <rect x="80" y="166" width="10" height="16" rx="2" fill="#ffd166" transform="rotate(30 85 174)"/><rect x="560" y="170" width="10" height="16" rx="2" fill="#06d6a0" transform="rotate(-25 565 178)"/><rect x="150" y="230" width="9" height="14" rx="2" fill="#ef476f" transform="rotate(-40 154 237)"/><rect x="480" y="236" width="9" height="14" rx="2" fill="#ffd166" transform="rotate(50 484 243)"/><circle cx="130" cy="190" r="5" fill="#118ab2"/><circle cx="510" cy="200" r="5" fill="#ef476f"/><circle cx="420" cy="150" r="4" fill="#fff"/><circle cx="220" cy="150" r="4" fill="#fff"/>
+  </g>
+  <g transform="translate(282 196) rotate(-16)">
+    <path d="M-30-60h60l-8 104a8 8 0 0 1-8 7h-28a8 8 0 0 1-8-7z" fill="#fff" opacity=".95"/>
+    <path d="M-27-30h54l-5 72a6 6 0 0 1-6 5h-32a6 6 0 0 1-6-5z" fill="#ffb627"/>
+    <g fill="#fff" opacity=".7"><circle cx="-8" cy="-10" r="4"/><circle cx="6" cy="10" r="3"/><circle cx="-4" cy="26" r="3"/></g>
+    <rect x="-34" y="-66" width="68" height="10" rx="5" fill="#fff"/>
+  </g>
+  <g transform="translate(360 196) rotate(16)">
+    <path d="M-30-60h60l-8 104a8 8 0 0 1-8 7h-28a8 8 0 0 1-8-7z" fill="#fff" opacity=".95"/>
+    <path d="M-27-24h54l-5 66a6 6 0 0 1-6 5h-32a6 6 0 0 1-6-5z" fill="#ef476f"/>
+    <g fill="#fff" opacity=".7"><circle cx="8" cy="-4" r="4"/><circle cx="-6" cy="14" r="3"/></g>
+    <rect x="-34" y="-66" width="68" height="10" rx="5" fill="#fff"/>
+  </g>
+  <g stroke="#fff" stroke-width="4" stroke-linecap="round"><line x1="321" y1="104" x2="321" y2="84"/><line x1="300" y1="110" x2="288" y2="94"/><line x1="342" y1="110" x2="354" y2="94"/></g>
+</svg>

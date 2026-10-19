@@ -50,6 +50,13 @@
       "when": 1791946771911,
       "tag": "0006_perpetual_the_executioner",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1792393612168,
+      "tag": "0007_tearful_fallen_one",
+      "breakpoints": true
     }
   ]
 }

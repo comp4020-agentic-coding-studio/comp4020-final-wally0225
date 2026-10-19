@@ -4,8 +4,19 @@ import Icon from "../../components/Icon.astro";
 import InviteCard from "../../components/InviteCard.astro";
 import Layout from "../../layouts/Layout.astro";
 import { listUpcoming } from "../../lib/db";
-import { MAX_GROUP_ABOUT, MAX_GROUP_NAME, canHost, getGroup, groupHue, listMembers } from "../../lib/groups";
+import {
+  COVERS,
+  MAX_GROUP_ABOUT,
+  MAX_GROUP_NAME,
+  canHost,
+  coverOf,
+  coverUrl,
+  getGroup,
+  groupHue,
+  listMembers,
+} from "../../lib/groups";
 import { currentPerson } from "../../lib/identity";
+import { TAGS } from "../../lib/tags";
 
 // One group: its upcoming Vybes, who's in it and what they can do, and for
 // its owner and hosts, managing it. What a button offers here, the server
@@ -30,6 +41,7 @@ const errors: Record<string, string> = {
   owner: "The owner's role can't change, and the owner can't leave.",
   "not-member": "They're not in the group any more.",
   name: `Give the group a name (up to ${MAX_GROUP_NAME} characters).`,
+  cover: "Pick one of the covers shown.",
 };
 const error = errors[Astro.url.searchParams.get("error") ?? ""];
 const roleLabel = { owner: "Owner", host: "Host", member: "Member" } as const;
@@ -37,13 +49,16 @@ const hue = groupHue(group.name);
 const hosts = people.filter((m) => m.role !== "member").length;
 const weekly = vybes.filter((i) => i.repeat === "weekly").length;
 const faces = people.slice(0, 5);
+const cover = coverOf(group);
 ---
 
 <Layout title={`${group.name} · Vybe`} active="groups">
   <a class="backlink" href="/groups"><Icon name="chevron-left" />Groups</a>
 
   <section class="ghero" style={`--hue: ${hue}`}>
-    <div class="ghero__cover" aria-hidden="true"></div>
+    <div class="ghero__cover" aria-hidden="true">
+      <img src={coverUrl(cover)} alt="" />
+    </div>
     <div class="ghero__main">
       <span class="ghero__mark" aria-hidden="true">{group.name.slice(0, 1).toUpperCase()}</span>
       <div class="ghero__body">
@@ -101,7 +116,7 @@ const faces = people.slice(0, 5);
       vybes.length === 0 ? (
         <p class="empty">{host ? "Nothing planned. Post the first Vybe, or a weekly one." : "Nothing planned yet."}</p>
       ) : (
-        <ul class="invites">
+        <ul class="invites invites--cards">
           {vybes.map((invite) => (
             <InviteCard
               invite={invite}
@@ -109,6 +124,7 @@ const faces = people.slice(0, 5);
               personId={person.id}
               variant={invite.going.some((g) => g.id === person.id) ? "mine" : "open"}
               groupsIn={groupsIn}
+              cover={cover}
             />
           ))}
         </ul>
@@ -123,16 +139,26 @@ const faces = people.slice(0, 5);
       <span class="pill">{people.length}</span>
     </div>
     {/* who can do what: owner and hosts post; hosts make hosts; only the owner takes it back or removes */}
-    <ul class="memberlist card">
+    <ul class="membergrid">
       {people.map((m) => (
-        <li class="member">
-          <Avatar name={m.name} />
-          <span class="member__name">
+        <li class={`mcard mcard--${m.role}`}>
+          {m.role !== "owner" && owner && (
+            <form method="post" action="/api/groups" class="mcard__remove">
+              <input type="hidden" name="action" value="remove" />
+              <input type="hidden" name="group" value={group.id} />
+              <input type="hidden" name="person" value={m.id} />
+              <button class="iconbutton" aria-label={`Remove ${m.name} from the group`} title="Remove from group">
+                <Icon name="x" />
+              </button>
+            </form>
+          )}
+          <Avatar name={m.name} large />
+          <span class="mcard__name">
             {m.name}
             {m.id === person.id && <span class="muted"> (you)</span>}
-            {m.role !== "member" && <span class={`badge badge--role badge--${m.role}`}>{roleLabel[m.role]}</span>}
           </span>
-          <span class="member__actions">
+          <span class={`badge badge--role badge--${m.role}`}>{roleLabel[m.role]}</span>
+          <span class="mcard__actions">
           {m.role === "member" && host && (
             <form method="post" action="/api/groups">
               <input type="hidden" name="action" value="role" />
@@ -149,16 +175,6 @@ const faces = people.slice(0, 5);
               <input type="hidden" name="person" value={m.id} />
               <input type="hidden" name="role" value="member" />
               <button class="button button--ghost button--small">Remove host</button>
-            </form>
-          )}
-          {m.role !== "owner" && owner && (
-            <form method="post" action="/api/groups">
-              <input type="hidden" name="action" value="remove" />
-              <input type="hidden" name="group" value={group.id} />
-              <input type="hidden" name="person" value={m.id} />
-              <button class="button button--ghost button--small member__remove" aria-label={`Remove ${m.name}`} title="Remove from group">
-                Remove
-              </button>
             </form>
           )}
           </span>
@@ -183,6 +199,18 @@ const faces = people.slice(0, 5);
               <span class="field__label">What it's about</span>
               <textarea name="about" maxlength={MAX_GROUP_ABOUT} rows="2">{group.about}</textarea>
             </label>
+            <fieldset class="field coverpick">
+              <legend class="field__label">Cover</legend>
+              <div class="coverpick__grid">
+                {COVERS.map((c) => (
+                  <label class="coverpick__option">
+                    <input type="radio" name="cover" value={c} checked={c === cover} />
+                    <img src={coverUrl(c)} alt="" loading="lazy" />
+                    <span>{TAGS[c].label}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             <button class="button">Save</button>
           </form>
         </details>

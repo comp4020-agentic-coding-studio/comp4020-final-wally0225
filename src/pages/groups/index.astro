@@ -1,7 +1,7 @@
 ---
 import Icon from "../../components/Icon.astro";
 import Layout from "../../layouts/Layout.astro";
-import { MAX_GROUP_ABOUT, MAX_GROUP_NAME, groupHue, listGroups } from "../../lib/groups";
+import { MAX_GROUP_ABOUT, MAX_GROUP_NAME, coverOf, coverUrl, groupHue, listGroups } from "../../lib/groups";
 import { currentPerson } from "../../lib/identity";
 
 // Every group, yours first. Anyone can start one and anyone can join.
@@ -50,17 +50,19 @@ const roleLabel = { owner: "Owner", host: "Host", member: "Member" } as const;
         </div>
         <ul class="groups">
           {yours.map((g) => (
-            <li>
-              <a class="groupcard" href={`/groups/${g.id}`} style={`--hue: ${groupHue(g.name)}`}>
+            <li class="groupcard" style={`--hue: ${groupHue(g.name)}`}>
+              <a class="groupcard__link" href={`/groups/${g.id}`}>
+                <span class="groupcard__cover" aria-hidden="true"><img src={coverUrl(coverOf(g))} alt="" loading="lazy" /></span>
                 <span class="groupcard__mark" aria-hidden="true">{g.name.slice(0, 1).toUpperCase()}</span>
                 <span class="groupcard__body">
                   <span class="groupcard__name">{g.name}</span>
-                  <span class="groupcard__meta">
-                    {g.memberCount} {g.memberCount === 1 ? "member" : "members"}
-                  </span>
+                  {g.about && <span class="groupcard__about">{g.about}</span>}
                 </span>
-                <span class={`badge badge--role badge--${g.role}`}>{roleLabel[g.role!]}</span>
               </a>
+              <span class="groupcard__foot">
+                <span class="groupcard__meta"><Icon name="users" />{g.memberCount} {g.memberCount === 1 ? "member" : "members"}</span>
+                <span class={`badge badge--role badge--${g.role}`}>{roleLabel[g.role!]}</span>
+              </span>
             </li>
           ))}
         </ul>
@@ -80,20 +82,21 @@ const roleLabel = { owner: "Owner", host: "Host", member: "Member" } as const;
           {others.map((g) => (
             <li class="groupcard" style={`--hue: ${groupHue(g.name)}`}>
               <a class="groupcard__link" href={`/groups/${g.id}`}>
+                <span class="groupcard__cover" aria-hidden="true"><img src={coverUrl(coverOf(g))} alt="" loading="lazy" /></span>
                 <span class="groupcard__mark" aria-hidden="true">{g.name.slice(0, 1).toUpperCase()}</span>
                 <span class="groupcard__body">
                   <span class="groupcard__name">{g.name}</span>
-                  <span class="groupcard__meta">
-                    {g.memberCount} {g.memberCount === 1 ? "member" : "members"}
-                    {g.about && ` · ${g.about}`}
-                  </span>
+                  {g.about && <span class="groupcard__about">{g.about}</span>}
                 </span>
               </a>
-              <form method="post" action="/api/groups">
-                <input type="hidden" name="action" value="join" />
-                <input type="hidden" name="group" value={g.id} />
-                <button class="button button--small">Join</button>
-              </form>
+              <span class="groupcard__foot">
+                <span class="groupcard__meta"><Icon name="users" />{g.memberCount} {g.memberCount === 1 ? "member" : "members"}</span>
+                <form method="post" action="/api/groups">
+                  <input type="hidden" name="action" value="join" />
+                  <input type="hidden" name="group" value={g.id} />
+                  <button class="button button--small">Join</button>
+                </form>
+              </span>
             </li>
           ))}
         </ul>

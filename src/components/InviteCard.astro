@@ -1,6 +1,6 @@
 ---
 import { type InviteView, arrivalOptions } from "../lib/db";
-import { groupHue } from "../lib/groups";
+import { type Cover, coverUrl, groupHue } from "../lib/groups";
 import { TAGS, isTag } from "../lib/tags";
 import { dateBlock, formatClock, formatTimes } from "../lib/time";
 import Avatar from "./Avatar.astro";
@@ -16,11 +16,14 @@ interface Props {
   variant: "mine" | "open" | "past";
   // the groups this person is in; a group's Vybe asks them to join it first
   groupsIn?: Set<number>;
+  // show a picture across the top: the Vybe's tag, or failing that this one
+  cover?: Cover;
 }
 
-const { invite, now, personId, variant, groupsIn = new Set() } = Astro.props;
+const { invite, now, personId, variant, groupsIn = new Set(), cover } = Astro.props;
 const needsGroup = invite.groupId !== null && !groupsIn.has(invite.groupId);
 const tag = invite.tag && isTag(invite.tag) ? invite.tag : undefined;
+const picture = cover ? coverUrl(tag ?? cover) : undefined;
 
 const count = invite.going.length;
 const full = count >= invite.size;
@@ -39,7 +42,7 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
 
 <li
   id={variant === "past" ? undefined : `invite-${invite.id}`}
-  class={`invite invite--${variant}${cancelled ? " invite--cancelled" : ""}`}
+  class={`invite invite--${variant}${cancelled ? " invite--cancelled" : ""}${picture ? " invite--cover" : ""}`}
   data-going={variant === "past" ? undefined : count}
   data-lat={variant === "past" ? undefined : invite.lat}
   data-lng={variant === "past" ? undefined : invite.lng}
@@ -49,6 +52,7 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
   data-title={variant === "past" ? undefined : invite.title}
   data-state={variant === "past" ? undefined : cancelled ? "cancelled" : variant === "mine" ? (hosting ? "hosting" : "going") : full ? "full" : "open"}
 >
+  {picture && <div class="invite__cover" aria-hidden="true"><img src={picture} alt="" loading="lazy" /></div>}
   <div class="invite__main">
     <div class="datebox" aria-hidden="true">
       <span class="datebox__top">{block.top}</span>

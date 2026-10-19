@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 320">
+  <defs>
+    <pattern id="cloth" width="40" height="40" patternUnits="userSpaceOnUse"><rect width="40" height="40" fill="#fff4ea"/><rect width="20" height="20" fill="#ffd9c2"/><rect x="20" y="20" width="20" height="20" fill="#ffd9c2"/></pattern>
+  </defs>
+  <rect width="640" height="320" fill="url(#cloth)"/>
+  <ellipse cx="250" cy="176" rx="132" ry="132" fill="#000" opacity=".08"/>
+  <circle cx="244" cy="166" r="130" fill="#fff"/>
+  <circle cx="244" cy="166" r="112" fill="#e76f51"/>
+  <circle cx="244" cy="166" r="100" fill="#f4a259"/>
+  <g fill="none" stroke="#ffe9b0" stroke-width="7" stroke-linecap="round">
+    <path d="M168 150q14-14 28 0t28 0t28 0t28 0"/><path d="M170 176q14-14 28 0t28 0t28 0t28 0t28 0"/><path d="M186 202q14-14 28 0t28 0t28 0"/><path d="M190 124q14-14 28 0t28 0"/>
+  </g>
+  <g transform="translate(300 120)"><ellipse rx="30" ry="24" fill="#fff"/><circle r="13" fill="#ffb627"/></g>
+  <g transform="translate(206 214)"><circle r="22" fill="#fbe1e6"/><circle r="12" fill="#fff" /><path d="M-12 0a12 12 0 0 1 24 0" fill="none" stroke="#ef476f" stroke-width="4"/></g>
+  <g fill="#3fa34d"><circle cx="232" cy="110" r="5"/><circle cx="246" cy="98" r="5"/><circle cx="214" cy="126" r="4"/><circle cx="292" cy="206" r="5"/><circle cx="276" cy="222" r="4"/></g>
+  <rect x="270" y="150" width="56" height="44" rx="6" fill="#7a3e2b" transform="rotate(12 298 172)"/>
+  <rect x="276" y="156" width="44" height="6" rx="3" fill="#c0694b" transform="rotate(12 298 172)"/>
+  <g stroke-linecap="round"><line x1="350" y1="20" x2="440" y2="300" stroke="#8d5a3b" stroke-width="9"/><line x1="380" y1="14" x2="456" y2="296" stroke="#a46b45" stroke-width="9"/></g>
+  <circle cx="520" cy="110" r="74" fill="#fff"/>
+  <circle cx="520" cy="110" r="60" fill="#e9f1f7"/>
+  <g fill="#fffaf0" stroke="#e8d8bd" stroke-width="3">
+    <path d="M482 100q18-30 36 0q-18 14-36 0z"/><path d="M522 92q18-30 36 0q-18 14-36 0z"/><path d="M500 132q18-30 36 0q-18 14-36 0z"/>
+  </g>
+  <circle cx="540" cy="250" r="44" fill="#fff"/>
+  <circle cx="540" cy="250" r="34" fill="#3b1f14"/>
+  <circle cx="530" cy="240" r="8" fill="#5c3424" />
+  <g fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".8"><path d="M210 40q-10-14 0-28M240 44q-10-14 0-28M270 40q-10-14 0-28"/></g>
+  <circle cx="70" cy="260" r="40" fill="#fff"/><circle cx="70" cy="260" r="30" fill="#06d6a0"/>
+  <g fill="#fff" opacity=".7"><circle cx="60" cy="252" r="4"/><circle cx="78" cy="266" r="4"/><circle cx="72" cy="248" r="3"/></g>
+</svg>

@@ -3,6 +3,7 @@ import {
   MAX_GROUP_ABOUT,
   MAX_GROUP_NAME,
   createGroup,
+  isCover,
   joinGroup,
   leaveGroup,
   removeMember,
@@ -70,8 +71,11 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     const name = String(form.get("name") ?? "").trim();
     const about = String(form.get("about") ?? "").trim();
     if (!name || name.length > MAX_GROUP_NAME || about.length > MAX_GROUP_ABOUT) return back("name");
-    const result = updateGroup(group, person.id, name, about);
-    log(person, "updated group", { group, result });
+    const picked = String(form.get("cover") ?? "");
+    const cover = isCover(picked) ? picked : null;
+    if (picked && !cover) return back("cover");
+    const result = updateGroup(group, person.id, name, about, cover);
+    log(person, "updated group", { group, cover: cover ?? "-", result });
     return back(result === "updated" ? undefined : result);
   }
 

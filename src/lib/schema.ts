@@ -25,6 +25,9 @@ export const groups = sqliteTable("groups", {
   id: int().primaryKey({ autoIncrement: true }),
   name: text().notNull(),
   about: text().notNull().default(""),
+  // the picture at the top of its card and page, one of public/covers
+  // (src/lib/groups.ts); null until the owner picks one
+  cover: text(),
   ownerId: text("owner_id")
     .notNull()
     .references(() => people.id),
