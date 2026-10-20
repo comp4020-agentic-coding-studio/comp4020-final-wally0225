@@ -1,0 +1,9 @@
+# Crit 10 reflection
+
+## What was the breakthrough that moved the work forward?
+
+The breakthrough was seeing that multi-user rules are part of the user experience, not just security. This week Vybe had to tell people apart and decide what each of them may see and change. I could have treated that as a list of things to block. Instead, every rule started from the question "what would make this go smoothly for the person on the other side?" A host can cancel, but the people who joined still see the cancelled Vybe, so nobody turns up to an empty court. Group Vybes show to everyone, so people discover groups through what they do, and joining one is a single tap that lands you back on the Vybe. The chat is only for the people going, and it stays open after a cancel so they can sort out another day. Once I framed each rule that way, the server checks and the ADR came out of decisions I had already made for the user, and the two-person test from the live URL showed that two people could use it side by side without stepping on each other.
+
+## What did this work change about who I want to be as a software developer?
+
+At this stage I'm trying to maximise how user-friendly Vybe is, so every user can go through it smoothly, and this week showed me that this is also the kind of product manager I want to be. My rule for every choice is that it has to be better for the user, something the app can actually do, and logic that holds up. This week I used it on every feature: the chat exists because it helps a Vybe go well, not because apps usually have one, and it disappears when the Vybe ends because there's no reason to keep it. Working with the agent, my job was less about writing code and more about deciding what the user should experience and checking that the result matched. I want to be a product manager who starts from the user's path through the product and makes every rule serve it, and who can still explain why each decision holds up.
