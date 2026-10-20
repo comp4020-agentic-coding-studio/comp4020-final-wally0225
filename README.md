@@ -41,4 +41,4 @@ Ray Oldenburg's *The Great Good Place* (1989) describes "third places" where peo
 
 Vybe started as my group's pitch, with profiles, AI matching, reputation scores, ID checks, a premium tier and venue partnerships. They were there to grow a platform. For a small group they make things worse: scoring the people you play pickleball with isn't low pressure, and matching isn't needed when you can read the whole list.
 
-There's also no chat. The group chat is what Vybe replaces, so the plan is in the Vybe and the talking happens when you meet. There are no accounts either, just a first name. Right now anyone with the link can join; who counts as a member is a decision I haven't made yet.
+Each Vybe has a chat, but it isn't the big group chat that mixes everything together and buries the details. It only exists while the Vybe is on, only the people who joined can read it, and it's deleted when the Vybe ends. It's there to help the Vybe go well: say hello to your new friends, or sort out a problem before it starts. There are no accounts either, just a first name. Right now anyone with the link can join; who counts as a member is a decision I haven't made yet.
