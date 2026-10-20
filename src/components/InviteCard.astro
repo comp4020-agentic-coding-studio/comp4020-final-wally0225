@@ -18,9 +18,11 @@ interface Props {
   groupsIn?: Set<number>;
   // show a picture across the top: the Vybe's tag, or failing that this one
   cover?: Cover;
+  // how many messages its chat holds; only given for Vybes this person is going to
+  messages?: number;
 }
 
-const { invite, now, personId, variant, groupsIn = new Set(), cover } = Astro.props;
+const { invite, now, personId, variant, groupsIn = new Set(), cover, messages = 0 } = Astro.props;
 const needsGroup = invite.groupId !== null && !groupsIn.has(invite.groupId);
 const tag = invite.tag && isTag(invite.tag) ? invite.tag : undefined;
 const picture = cover ? coverUrl(tag ?? cover) : undefined;
@@ -133,6 +135,11 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
         <p class="invite__names">
           {invite.going.map((g) => (g.arrivesAt ? `${g.name} (from ${formatClock(g.arrivesAt)})` : g.name)).join(", ")}
         </p>
+        {/* the chat for the people going; stays open after a cancel, until it would have ended */}
+        <a class="chatlink" href={`/chat/${invite.id}`} title="Chat with who's going" aria-label={`Chat about ${invite.title}${messages ? `, ${messages} ${messages === 1 ? "message" : "messages"}` : ""}`}>
+          <Icon name="chat" />Chat
+          {messages > 0 && <span class="chatlink__count">{messages}</span>}
+        </a>
         {!cancelled && (
           <a class="icalink" href={`/api/calendar.ics?invite=${invite.id}`} title="Add to my calendar" aria-label={`Add ${invite.title} to my calendar`}>
             <Icon name="calendar" />

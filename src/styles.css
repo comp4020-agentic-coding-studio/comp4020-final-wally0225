@@ -2554,3 +2554,252 @@ textarea {
   background: hsl(var(--hue) 60% 98%);
   border-color: hsl(var(--hue) 40% 86%);
 }
+
+/* --- a Vybe's chat ------------------------------------------------------- */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.chat {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 24px;
+  /* the whole chat fits the screen; only the messages scroll */
+  height: calc(100dvh - 9.5rem);
+  min-height: 26rem;
+}
+
+.chat__head {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--accent-soft), var(--surface));
+}
+
+.chat__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat__title h1 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 750;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat__title .muted {
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat__note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.45rem 1rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-2);
+}
+
+.chat__log {
+  list-style: none;
+  margin: 0;
+  padding: 1rem 1rem 0.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.chat__empty {
+  margin: auto;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.chat__day {
+  align-self: center;
+  margin: 0.6rem 0 0.3rem;
+  padding: 0.15rem 0.65rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.msg {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.45rem;
+  max-width: 82%;
+}
+
+.msg:not(.msg--run) {
+  margin-top: 0.4rem;
+}
+
+.msg__spacer {
+  width: 2rem;
+  flex: none;
+}
+
+.msg__bubble {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.5rem 0.8rem 0.4rem;
+  border-radius: 18px 18px 18px 6px;
+  background: var(--surface-2);
+}
+
+.msg__name {
+  font-size: 0.75rem;
+  font-weight: 750;
+  color: var(--accent);
+}
+
+.msg__body {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.msg__time {
+  justify-self: end;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.msg--mine {
+  align-self: flex-end;
+}
+
+.msg--mine .msg__bubble {
+  border-radius: 18px 18px 6px 18px;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.msg--mine .msg__time {
+  color: rgb(255 255 255 / 0.75);
+}
+
+.chat__end {
+  height: 1px;
+}
+
+.chat > .toast {
+  margin: 0 1rem 0.5rem;
+}
+
+.chat__compose {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.chat__compose textarea {
+  resize: none;
+  min-height: 2.75rem;
+  max-height: 10rem;
+  border-radius: 22px;
+  padding: 0.65rem 1rem;
+}
+
+.chat__compose textarea:focus {
+  outline: none;
+  background: var(--surface);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.chat__send {
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.chat--closed {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  height: auto;
+  min-height: 0;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+}
+
+.chat--closed > .icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--accent);
+}
+
+.chat--closed h1 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.chat--closed .button {
+  margin-top: 0.75rem;
+}
+
+/* the Chat button on a Vybe you're going to, with how many messages it holds */
+.chatlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 2.4rem;
+  padding: 0 0.85rem 0 0.7rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.chatlink:hover {
+  background: hsl(177 55% 86%);
+}
+
+.chatlink__count {
+  display: grid;
+  place-items: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.75rem;
+}

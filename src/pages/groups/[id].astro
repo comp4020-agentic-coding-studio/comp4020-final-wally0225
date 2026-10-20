@@ -15,6 +15,7 @@ import {
   groupHue,
   listMembers,
 } from "../../lib/groups";
+import { messageCounts } from "../../lib/chat";
 import { currentPerson } from "../../lib/identity";
 import { TAGS } from "../../lib/tags";
 
@@ -50,6 +51,7 @@ const hosts = people.filter((m) => m.role !== "member").length;
 const weekly = vybes.filter((i) => i.repeat === "weekly").length;
 const faces = people.slice(0, 5);
 const cover = coverOf(group);
+const chats = messageCounts(vybes.filter((i) => i.going.some((g) => g.id === person.id)).map((i) => i.id));
 ---
 
 <Layout title={`${group.name} · Vybe`} active="groups">
@@ -125,6 +127,7 @@ const cover = coverOf(group);
               variant={invite.going.some((g) => g.id === person.id) ? "mine" : "open"}
               groupsIn={groupsIn}
               cover={cover}
+              messages={chats.get(invite.id)}
             />
           ))}
         </ul>

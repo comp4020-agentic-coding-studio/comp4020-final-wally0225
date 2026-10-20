@@ -6,7 +6,7 @@ import { and, asc, desc, eq, gt, inArray, isNull, lte, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { announce } from "./live";
-import { type Invite, type Person, groups, invites, joins, members, people } from "./schema";
+import { type Invite, type Person, groups, invites, joins, members, messages, people } from "./schema";
 import { STEP_MINUTES, nextStep } from "./time";
 
 // One SQLite file is the app's whole persistent state. In production the
@@ -50,12 +50,27 @@ export interface InviteView extends Invite {
 const notOver = (now: Date) => or(gt(invites.endsAt, now), and(isNull(invites.endsAt), gt(invites.startsAt, now)));
 const over = (now: Date) => or(lte(invites.endsAt, now), and(isNull(invites.endsAt), lte(invites.startsAt, now)));
 
+// When a Vybe ends its chat goes (src/lib/chat.ts): the messages are
+// deleted, not hidden. This runs whenever the list or a chat is read, and on
+// a timer so nothing lingers on the volume when nobody's looking.
+export function deleteEndedChats(now: Date): number {
+  const ended = db.select({ id: invites.id }).from(invites).where(over(now));
+  const deleted = db.delete(messages).where(inArray(messages.inviteId, ended)).run().changes;
+  if (deleted > 0) console.log(`[vybe] chat cleared for ended Vybes messages=${deleted}`);
+  return deleted;
+}
+
+const SWEEP_EVERY_MS = 5 * 60_000;
+setInterval(() => deleteEndedChats(new Date()), SWEEP_EVERY_MS).unref();
+deleteEndedChats(new Date());
+
 // Invites that haven't ended yet, soonest first: whether it's in 30 minutes,
 // tomorrow, or already going, the only question is whether you're free.
 // A cancelled one is only for the people who joined it, so they know not to
 // turn up; everyone else never sees it again.
 export function listUpcoming(now: Date, personId: string): InviteView[] {
   rollRepeats(now);
+  deleteEndedChats(now);
   const rows = db
     .select({ invite: invites, host: people.name })
     .from(invites)

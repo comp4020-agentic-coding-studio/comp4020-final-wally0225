@@ -1,0 +1,170 @@
+---
+import Avatar from "../../components/Avatar.astro";
+import Icon from "../../components/Icon.astro";
+import Layout from "../../layouts/Layout.astro";
+import { MAX_MESSAGE, chatAccess, listMessages } from "../../lib/chat";
+import { db } from "../../lib/db";
+import { currentPerson } from "../../lib/identity";
+import { invites } from "../../lib/schema";
+import { dateBlock, formatClock, formatTimes } from "../../lib/time";
+import { eq } from "drizzle-orm";
+
+// A Vybe's chat, for the people going. src/lib/chat.ts decides who can read
+// it; anyone else gets a 403 page that shows none of it.
+const person = currentPerson(Astro.cookies);
+if (!person) return Astro.redirect("/");
+
+const now = new Date();
+const id = Number(Astro.params.id);
+const access = Number.isInteger(id) ? chatAccess(id, person.id, now) : "gone";
+const invite = access === "gone" ? undefined : db.select().from(invites).where(eq(invites.id, id)).get();
+if (access !== "open") Astro.response.status = access === "not-going" ? 403 : 404;
+
+const messages = access === "open" ? listMessages(id) : [];
+const errors: Record<string, string> = {
+  message: `Write something, up to ${MAX_MESSAGE} characters.`,
+  "not-going": "Only people going can write here.",
+  over: "This Vybe has ended, and its chat with it.",
+};
+const error = errors[Astro.url.searchParams.get("error") ?? ""];
+const block = invite ? dateBlock(invite.startsAt, now) : undefined;
+// a new day starts a new run of messages, so "8:05 pm" is never ambiguous
+const day = (at: Date) => at.toLocaleDateString("en-AU", { timeZone: "Australia/Canberra", weekday: "short", day: "numeric", month: "short" });
+---
+
+<Layout title={invite ? `${invite.title} · Chat · Vybe` : "Chat · Vybe"} active="invites">
+  <a class="backlink" href={invite ? `/#invite-${invite.id}` : "/"}><Icon name="chevron-left" />Vybes</a>
+
+  {
+    access !== "open" || !invite ? (
+      <section class="chat chat--closed card">
+        <Icon name="chat" />
+        <h1>{access === "over" ? "This chat has ended" : access === "gone" ? "No such Vybe" : "This chat is for the people going"}</h1>
+        <p class="muted">
+          {access === "over"
+            ? "A Vybe's chat is deleted when the Vybe ends."
+            : access === "gone"
+              ? "It may have been removed."
+              : "Join the Vybe to say hello to everyone else who's going."}
+        </p>
+        <a class="button" href="/">Back to Vybes</a>
+      </section>
+    ) : (
+      <section class="chat card" data-chat={invite.id}>
+        <header class="chat__head">
+          <div class="datebox" aria-hidden="true">
+            <span class="datebox__top">{block!.top}</span>
+            <span class="datebox__day">{block!.day}</span>
+          </div>
+          <div class="chat__title">
+            <h1>{invite.title}</h1>
+            <p class="muted">
+              {formatTimes(invite.startsAt, now, invite.endsAt)} · {invite.place}
+            </p>
+          </div>
+          {invite.cancelledAt && <span class="badge badge--cancelled">Cancelled</span>}
+        </header>
+
+        <p class="chat__note">
+          <Icon name="clock" />
+          Only people going can see this. It's deleted when the Vybe ends.
+        </p>
+
+        <ol class="chat__log" data-chat-log aria-live="polite">
+          {messages.length === 0 && <li class="chat__empty">No messages yet. Say hello!</li>}
+          {messages.map((m, i) => {
+            const mine = m.personId === person.id;
+            const prev = messages[i - 1];
+            const newDay = !prev || day(prev.sentAt) !== day(m.sentAt);
+            const run = !newDay && prev?.personId === m.personId;
+            return (
+              <>
+                {newDay && <li class="chat__day">{day(m.sentAt)}</li>}
+                <li class:list={["msg", { "msg--mine": mine, "msg--run": run }]}>
+                  {!mine && (run ? <span class="msg__spacer" /> : <Avatar name={m.name} />)}
+                  <div class="msg__bubble">
+                    {!mine && !run && <span class="msg__name">{m.name}</span>}
+                    <p class="msg__body">{m.body}</p>
+                    <time class="msg__time" datetime={m.sentAt.toISOString()}>{formatClock(m.sentAt)}</time>
+                  </div>
+                </li>
+              </>
+            );
+          })}
+          <li id="latest" class="chat__end" aria-hidden="true" />
+        </ol>
+
+        {error && <p class="toast" role="alert"><Icon name="alert" />{error}</p>}
+
+        <form method="post" action="/api/chat" class="chat__compose" data-chat-form>
+          <input type="hidden" name="invite" value={invite.id} />
+          <label class="visually-hidden" for="chat-body">Message</label>
+          <textarea id="chat-body" name="body" rows="1" maxlength={MAX_MESSAGE} required placeholder="Say hello, or “running 5 min late”" autocomplete="off"></textarea>
+          <button class="button chat__send" aria-label="Send"><Icon name="send" /></button>
+        </form>
+      </section>
+    )
+  }
+</Layout>
+
+<script>
+  // New messages: the server says only that this chat has one, and the page
+  // refetches itself and swaps in the log, so the server decides what's shown
+  // (and checks again that you're still going). What you're typing is left
+  // alone. Enter sends; Shift+Enter is a new line.
+  const chat = document.querySelector<HTMLElement>("[data-chat]");
+  if (chat) {
+    const invite = Number(chat.dataset.chat);
+    const log = () => chat.querySelector<HTMLElement>("[data-chat-log]")!;
+    const toEnd = () => log().scrollTo({ top: log().scrollHeight });
+    toEnd();
+
+    const refresh = async () => {
+      const res = await fetch(location.pathname, { headers: { accept: "text/html" } });
+      // left or ended: show the closed page instead
+      if (!res.ok) return location.reload();
+      const next = new DOMParser().parseFromString(await res.text(), "text/html").querySelector("[data-chat-log]");
+      if (!next) return;
+      const atEnd = log().scrollHeight - log().scrollTop - log().clientHeight < 80;
+      log().replaceWith(next);
+      if (atEnd) toEnd();
+    };
+
+    const events = new EventSource("/api/events");
+    events.addEventListener("chat", (e) => {
+      if (JSON.parse((e as MessageEvent).data).invite === invite) void refresh();
+    });
+    // a cancel or someone leaving might close it for you
+    events.addEventListener("change", (e) => {
+      if (JSON.parse((e as MessageEvent).data).invite === invite) void refresh();
+    });
+
+    const form = chat.querySelector<HTMLFormElement>("[data-chat-form]")!;
+    const box = form.querySelector("textarea")!;
+    const grow = () => {
+      box.style.height = "auto";
+      box.style.height = `${Math.min(box.scrollHeight, 160)}px`;
+    };
+    box.addEventListener("input", grow);
+    box.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        form.requestSubmit();
+      }
+    });
+
+    // send without leaving the page, so the log stays where it is
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!box.value.trim()) return;
+      const body = new FormData(form);
+      box.value = "";
+      grow();
+      const res = await fetch(form.action, { method: "post", body, redirect: "follow" });
+      if (new URL(res.url).searchParams.has("error")) return location.assign(res.url);
+      await refresh();
+      toEnd();
+      box.focus();
+    });
+  }
+</script>

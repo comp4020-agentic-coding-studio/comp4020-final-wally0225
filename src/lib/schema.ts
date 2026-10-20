@@ -111,5 +111,22 @@ export const joins = sqliteTable(
 
 export type Person = typeof people.$inferSelect;
 export type Invite = typeof invites.$inferSelect;
+// A Vybe's chat, for the people going: "running five minutes late", "which
+// court?". Deleted when the Vybe ends (src/lib/chat.ts); nothing here
+// outlives the plan it was about.
+export const messages = sqliteTable("messages", {
+  id: int().primaryKey({ autoIncrement: true }),
+  inviteId: int("invite_id")
+    .notNull()
+    .references(() => invites.id),
+  personId: text("person_id")
+    .notNull()
+    .references(() => people.id),
+  body: text().notNull(),
+  sentAt: int("sent_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+});
+
 export type Group = typeof groups.$inferSelect;
 export type Role = (typeof members.$inferSelect)["role"];

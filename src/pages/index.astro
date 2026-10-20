@@ -10,6 +10,7 @@ import Layout from "../layouts/Layout.astro";
 import { LATE_CUTOFF_MINUTES, MAX_HOURS, MAX_SIZE, canJoin, listPast, listUpcoming } from "../lib/db";
 import { hostingGroups, listGroups } from "../lib/groups";
 import { currentPerson } from "../lib/identity";
+import { messageCounts } from "../lib/chat";
 import { TAGS } from "../lib/tags";
 import { TIME_SLOTS, nextStep, toLocalInput } from "../lib/time";
 
@@ -24,6 +25,8 @@ const upcoming = person ? listUpcoming(now, person.id) : [];
 const past = person ? listPast(person.id, now) : [];
 const mine = upcoming.filter((i) => i.going.some((g) => g.id === person?.id));
 const open = upcoming.filter((i) => !mine.includes(i) && canJoin(i, now));
+// how many messages each of your Vybes' chats holds, for its Chat button
+const chats = messageCounts(mine.map((i) => i.id));
 
 // The form starts on the next five-minute step, running an hour.
 const today = toLocalInput(now).slice(0, 10);
@@ -205,7 +208,7 @@ const postRefused = ["details", "time", "end", "size", "spot", "not-group-host"]
           ) : (
             <ul class="invites">
               {mine.map((invite) => (
-                <InviteCard invite={invite} now={now} personId={person.id} variant="mine" groupsIn={groupsIn} />
+                <InviteCard invite={invite} now={now} personId={person.id} variant="mine" groupsIn={groupsIn} messages={chats.get(invite.id)} />
               ))}
             </ul>
           )}
@@ -487,6 +490,8 @@ const postRefused = ["details", "time", "end", "size", "spot", "not-group-host"]
 
     const events = new EventSource("/api/events");
     events.addEventListener("change", soon);
+    // a new message in one of your Vybes' chats: its Chat button's count moves
+    events.addEventListener("chat", soon);
     // every connection, the first and each reconnect, gets a new id, and the
     // server knows nothing about what this page shows until it's told again
     events.addEventListener("hello", (e) => {

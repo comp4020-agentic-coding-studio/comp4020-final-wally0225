@@ -37,6 +37,15 @@ export function announce(inviteId: number) {
   for (const page of pages.values()) page.send(text);
 }
 
+// A new message in an invite's chat, told only to the people going: just
+// which invite, never what was said or by whom. Their chat page fetches the
+// messages, and the server checks again that they're still going.
+export function chatted(inviteId: number, people: string[]) {
+  const text = event("chat", { invite: inviteId });
+  const to = new Set(people);
+  for (const page of pages.values()) if (to.has(page.personId)) page.send(text);
+}
+
 // A page saying which cards are on its screen. Only its own person can say
 // it; false if the page isn't theirs (or has closed).
 export function viewing(streamId: string, personId: string, invites: number[]): boolean {
