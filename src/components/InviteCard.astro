@@ -158,6 +158,9 @@ const minutesLate = (t: Date) => Math.round((t.getTime() - invite.startsAt.getTi
               </button>
             </form>
           )}
+          {!started && (
+            <a class="button button--ghost button--small" href={`/edit/${invite.id}`}>Edit</a>
+          )}
           <form method="post" action="/api/cancel" class="cancel">
             <input type="hidden" name="invite" value={invite.id} />
             {/* a second tap confirms, so a stray one can't call it off */}

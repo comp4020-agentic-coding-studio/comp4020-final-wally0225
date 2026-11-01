@@ -2,14 +2,21 @@
 // The post form's map: the host taps where the invite is, and the spot goes
 // with the form as lat and lng. "Where" in words stays the label people read;
 // this is what puts the invite on everyone else's map.
+interface Props {
+  // where the pin starts, when editing a Vybe that already has a spot
+  lat?: number | null;
+  lng?: number | null;
+}
+const { lat = null, lng = null } = Astro.props;
+const has = lat !== null && lng !== null;
 ---
 
 <div class="field spotpicker">
   <span class="field__label">Tap the spot on the map</span>
   <div class="picker" data-picker></div>
-  <input type="hidden" name="lat" data-picker-lat />
-  <input type="hidden" name="lng" data-picker-lng />
-  <span class="field__hint" data-picker-hint>No spot yet</span>
+  <input type="hidden" name="lat" data-picker-lat value={has ? lat : undefined} />
+  <input type="hidden" name="lng" data-picker-lng value={has ? lng : undefined} />
+  <span class="field__hint" data-picker-hint>{has ? "Spot picked. Tap again to move it." : "No spot yet"}</span>
 </div>
 
 <script>
@@ -34,6 +41,11 @@
     box.closest("details")?.addEventListener("toggle", () => map.invalidateSize());
 
     let pin: L.CircleMarker | undefined;
+    if (lat.value && lng.value) {
+      const at = L.latLng(Number(lat.value), Number(lng.value));
+      pin = L.circleMarker(at, { radius: 9, className: "pin pin--picked" }).addTo(map);
+      map.setView(at, 16);
+    }
     map.on("click", (e) => {
       lat.value = e.latlng.lat.toFixed(6);
       lng.value = e.latlng.lng.toFixed(6);

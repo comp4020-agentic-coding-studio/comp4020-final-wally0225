@@ -46,6 +46,8 @@ const errors: Record<string, string> = {
   "not-host": "Only the person who posted a Vybe can cancel it.",
   "not-group-host": "Only a group's hosts can post Vybes in it.",
   tag: "Pick what kind of Vybe it is from the list.",
+  started: "That Vybe has already started, so it can't be changed.",
+  "size-low": "More people have joined than that. Pick a size that fits everyone going.",
   members: "That Vybe is for a group's members. Join the group first, then join the Vybe.",
 };
 const error = errors[Astro.url.searchParams.get("error") ?? ""];
