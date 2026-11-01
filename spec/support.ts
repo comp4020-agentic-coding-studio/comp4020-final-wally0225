@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { expect, inject } from "vitest";
 
 // What the checks in spec/ share: talking to the RUNNING app as one or more
@@ -17,12 +18,38 @@ export async function post(path: string, fields: Record<string, string>, cookie?
   });
 }
 
-// A new person, as the app knows them: the cookie it sets once they give a name.
+// The password every spec account uses; it meets the app's rules.
+export const PASSWORD = "Spec-check-pw1";
+
+// A username no other spec account has, so parallel files and repeat runs
+// against the same database never collide: "Ana" becomes "Ana-k3x9a1c2".
+export const uniqueName = (name: string) => `${name.replace(/[^A-Za-z0-9._-]+/g, "-")}-${randomBytes(4).toString("hex")}`;
+
+// Who each spec cookie belongs to, for finding them on a page by name.
+export const usernames = new Map<string, string>();
+
+export const cookieFrom = (res: Response) => res.headers.get("set-cookie")?.split(";")[0];
+
+// A new person, as the app knows them: they sign up, and the cookie it sets
+// is who they are from then on.
 export async function person(name: string): Promise<string> {
-  const res = await post("/api/name", { name });
-  const cookie = res.headers.get("set-cookie")?.split(";")[0];
-  if (!cookie) throw new Error(`no cookie for ${name}`);
+  const username = uniqueName(name);
+  const res = await post("/api/signup", { username, password: PASSWORD });
+  const cookie = cookieFrom(res);
+  if (!cookie) throw new Error(`no cookie for ${name}: ${res.status} ${res.headers.get("location")}`);
+  usernames.set(cookie, username);
   return cookie;
+}
+
+// A person's id as a group's page gives it to its members (the forms that
+// change their role), read by `viewer`.
+export async function idInGroup(viewer: string, group: string, who: string): Promise<string> {
+  const html = await (await fetch(new URL(`/groups/${group}`, baseUrl), { headers: { cookie: viewer } })).text();
+  const name = usernames.get(who)!;
+  const card = html.split("<li").find((li) => li.includes(name) && li.includes('name="person"'));
+  const id = card?.match(/name="person" value="([^"]+)"/)?.[1];
+  if (!id) throw new Error(`${name} isn't on group ${group}'s page`);
+  return id;
 }
 
 // The form's date and five-minute start and end fields for an invite starting

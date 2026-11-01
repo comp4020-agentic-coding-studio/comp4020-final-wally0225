@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { ANU, baseUrl, person, post, soon } from "./support";
+import { ANU, baseUrl, idInGroup, person, post, soon } from "./support";
 
 // Groups: anyone can start one and anyone can join. Only a group's owner
 // and hosts post Vybes in it; a host can make a member a host, and only the
@@ -57,10 +57,10 @@ it("lets a host make a member a host, and only the owner take it back", async ()
   const owner = await person("Owner");
   const group = await startGroup(owner, "Spec check: roles");
   const [ana, ben] = await Promise.all([person("Ana"), person("Ben")]);
-  const anaId = ana.split("=")[1];
-  const benId = ben.split("=")[1];
   await joinGroup(ana, group);
   await joinGroup(ben, group);
+  const anaId = await idInGroup(owner, group, ana);
+  const benId = await idInGroup(owner, group, ben);
 
   // a member can't hand out hosting
   const early = await post("/api/groups", { action: "role", group, person: anaId, role: "host" }, ben);

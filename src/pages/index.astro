@@ -34,7 +34,6 @@ const [defaultDate, defaultStart] = toLocalInput(nextStep(now)).split("T");
 const defaultEnd = toLocalInput(new Date(nextStep(now).getTime() + 3_600_000)).slice(11);
 
 const errors: Record<string, string> = {
-  name: "Give a name between 1 and 40 characters.",
   details: "Say what it is and where (up to 80 characters each).",
   time: "Pick a start time that hasn't passed yet.",
   end: `Pick an end time after the start, at most ${MAX_HOURS} hours later.`,
@@ -72,13 +71,10 @@ const postRefused = ["details", "time", "end", "size", "spot", "not-group-host"]
           Find people to <span class="accent">do things</span> with
         </h1>
         <p class="lead">Post what you want to do, when and where. Anyone free can join until it's full.</p>
-        <form method="post" action="/api/name" class="card stack">
-          <label class="field">
-            <span class="field__label">What should people call you?</span>
-            <input name="name" required maxlength="40" autocomplete="given-name" placeholder="Your first name" />
-          </label>
-          <button class="button button--wide">Get started</button>
-        </form>
+        <div class="card stack authchoice">
+          <a class="button button--wide" href="/signup">Sign up</a>
+          <a class="button button--wide button--outline" href="/login">Log in</a>
+        </div>
       </section>
     ) : (
       <>

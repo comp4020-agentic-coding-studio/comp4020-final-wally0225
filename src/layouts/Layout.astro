@@ -1,6 +1,7 @@
 ---
 import "../styles.css";
 import Icon from "../components/Icon.astro";
+import { currentPerson } from "../lib/identity";
 
 interface Props {
   title: string;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 const { title, active } = Astro.props;
+const person = currentPerson(Astro.cookies);
 ---
 
 <!doctype html>
@@ -38,9 +40,14 @@ const { title, active } = Astro.props;
         <div class="appbar__end">
         <nav aria-label="site" class="tabs">
           <a href="/" aria-current={active === "invites" ? "page" : undefined}>Vybes</a>
-          <a href="/groups" aria-current={active === "groups" ? "page" : undefined}>Groups</a>
+          {person && <a href="/groups" aria-current={active === "groups" ? "page" : undefined}>Groups</a>}
           <a href="/readme/" aria-current={active === "about" ? "page" : undefined}>About</a>
         </nav>
+        {person && (
+          <form method="post" action="/api/logout">
+            <button class="logout" title={`Log out ${person.name}`}>Log out</button>
+          </form>
+        )}
         <button type="button" class="themetoggle" data-theme-toggle aria-label="Switch to dark mode" title="Switch to dark mode">
           <span class="themetoggle__moon"><Icon name="sun" /></span>
           <span class="themetoggle__sun"><Icon name="moon" /></span>

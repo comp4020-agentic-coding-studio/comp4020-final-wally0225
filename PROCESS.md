@@ -58,4 +58,3 @@ Every action is logged on the server as one line in `flyctl logs`: `[vybe] Ana(4
 ## What changed this week, and what's next
 
 Crit 10 turned Vybe from one shared list into something people own parts of: their Vybes, their groups, their chats. The biggest change of mind was the chat: my README said no chat, and I changed it once I could say why this one is different from the group chat Vybe replaces. Every choice still went through my rule: better for the user, something the app can do, logic that holds up.
-
