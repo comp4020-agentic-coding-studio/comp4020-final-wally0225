@@ -53,9 +53,9 @@ export async function idInGroup(viewer: string, group: string, who: string): Pro
 }
 
 // The form's date and five-minute start and end fields for an invite starting
-// a few minutes from now and running an hour, in Canberra time, which is how
-// the app reads them.
-export function soon(minutes: number): { date: string; startTime: string; endTime: string } {
+// a few minutes from now and running an hour (or `hours`), in Canberra time,
+// which is how the app reads them.
+export function soon(minutes: number, hours = 1): { date: string; startTime: string; endTime: string } {
   const step = 5 * 60_000;
   const start = Math.ceil((Date.now() + minutes * 60_000) / step) * step;
   const local = (at: number) =>
@@ -73,7 +73,7 @@ export function soon(minutes: number): { date: string; startTime: string; endTim
         .map((part) => [part.type, part.value]),
     );
   const s = local(start);
-  const e = local(start + 60 * 60_000);
+  const e = local(start + hours * 60 * 60_000);
   return { date: `${s.year}-${s.month}-${s.day}`, startTime: `${s.hour}:${s.minute}`, endTime: `${e.hour}:${e.minute}` };
 }
 
