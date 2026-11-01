@@ -1,0 +1,94 @@
+---
+import Icon from "../../components/Icon.astro";
+import SpotPicker from "../../components/SpotPicker.astro";
+import Layout from "../../layouts/Layout.astro";
+import { MAX_HOURS, MAX_SIZE, db } from "../../lib/db";
+import { currentPerson } from "../../lib/identity";
+import { invites } from "../../lib/schema";
+import { TAGS } from "../../lib/tags";
+import { TIME_SLOTS, toLocalInput } from "../../lib/time";
+import { eq } from "drizzle-orm";
+
+// The host changing a Vybe before it starts. The page only offers it; the
+// rules are checked again in /api/edit.
+const person = currentPerson(Astro.cookies);
+if (!person) return Astro.redirect("/");
+
+const now = new Date();
+const id = Number(Astro.params.id);
+const invite = Number.isInteger(id) ? db.select().from(invites).where(eq(invites.id, id)).get() : undefined;
+if (!invite || invite.hostId !== person.id || invite.cancelledAt || invite.startsAt <= now) {
+  return Astro.redirect(invite && invite.hostId === person.id && invite.startsAt <= now ? "/?error=started" : "/");
+}
+
+const [date, start] = toLocalInput(invite.startsAt).split("T");
+const end = toLocalInput(invite.endsAt ?? new Date(invite.startsAt.getTime() + 3_600_000)).slice(11);
+const today = toLocalInput(now).slice(0, 10);
+
+const errors: Record<string, string> = {
+  details: "Say what it is and where (up to 80 characters each).",
+  time: "Pick a start time that hasn't passed yet.",
+  end: `Pick an end time after the start, at most ${MAX_HOURS} hours later.`,
+  size: `A group is between 2 and ${MAX_SIZE} people, you included.`,
+  "size-low": "More people have joined than that. Pick a size that fits everyone going.",
+  spot: "Tap the map where it is, somewhere near ANU.",
+  tag: "Pick what kind of Vybe it is from the list.",
+  started: "That Vybe has already started, so it can't be changed.",
+};
+const error = errors[Astro.url.searchParams.get("error") ?? ""];
+---
+
+<Layout title={`Edit ${invite.title} · Vybe`} active="invites">
+  <a class="backlink" href={`/#invite-${invite.id}`}><Icon name="chevron-left" />Vybes</a>
+  {error && <p class="toast" role="alert"><Icon name="alert" />{error}</p>}
+
+  <form method="post" action="/api/edit" class="stack card edit">
+    <h1>Edit your Vybe</h1>
+    <p class="muted">Everyone who joined sees the change straight away.</p>
+    <input type="hidden" name="invite" value={invite.id} />
+    <label class="field">
+      <span class="field__label">What</span>
+      <input name="title" required maxlength="80" value={invite.title} />
+    </label>
+    <label class="field">
+      <span class="field__label">Where</span>
+      <input name="place" required maxlength="80" value={invite.place} />
+    </label>
+    <SpotPicker lat={invite.lat} lng={invite.lng} />
+    <fieldset class="tagpick">
+      <legend class="field__label">What kind of Vybe <span class="field__label--sub">(optional)</span></legend>
+      <div class="tagpick__options">
+        {Object.entries(TAGS).map(([value, t]) => (
+          <label class="tagpick__option">
+            <input type="radio" name="tag" value={value} checked={invite.tag === value} />
+            <span><span aria-hidden="true">{t.emoji}</span>{t.label}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+    <fieldset class="when">
+      <legend class="field__label">When</legend>
+      <label class="field when__date">
+        <span class="field__label field__label--sub">Date</span>
+        <input name="date" type="date" required min={today} value={date} />
+      </label>
+      <label class="field">
+        <span class="field__label field__label--sub">Starts</span>
+        <select name="startTime" required>
+          {TIME_SLOTS.map((slot) => <option value={slot.value} selected={slot.value === start}>{slot.label}</option>)}
+        </select>
+      </label>
+      <label class="field">
+        <span class="field__label field__label--sub">Ends</span>
+        <select name="endTime" required>
+          {TIME_SLOTS.map((slot) => <option value={slot.value} selected={slot.value === end}>{slot.label}</option>)}
+        </select>
+      </label>
+    </fieldset>
+    <label class="field">
+      <span class="field__label">How many people, you included</span>
+      <input name="size" type="number" required min="2" max={MAX_SIZE} value={invite.size} />
+    </label>
+    <button class="button button--wide">Save changes</button>
+  </form>
+</Layout>

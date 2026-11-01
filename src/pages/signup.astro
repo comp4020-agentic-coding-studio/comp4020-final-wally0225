@@ -1,0 +1,37 @@
+---
+import Icon from "../components/Icon.astro";
+import Layout from "../layouts/Layout.astro";
+import { MIN_PASSWORD } from "../lib/accounts";
+import { currentPerson } from "../lib/identity";
+
+if (currentPerson(Astro.cookies)) return Astro.redirect("/");
+
+const errors: Record<string, string> = {
+  username: "Pick a username of 3 to 30 letters, numbers, dots, dashes or underscores.",
+  password: `Your password needs at least ${MIN_PASSWORD} characters, with an uppercase letter and a lowercase letter.`,
+  taken: "Someone already has that username. Pick another, or log in if it's yours.",
+};
+const error = errors[Astro.url.searchParams.get("error") ?? ""];
+---
+
+<Layout title="Sign up · Vybe" active="invites">
+  {error && <p class="toast" role="alert"><Icon name="alert" />{error}</p>}
+  <section class="hero">
+    <h1>Make your <span class="accent">account</span></h1>
+    <p class="lead">One account, so people can tell who's who and your plans are there when you come back.</p>
+    <form method="post" action="/api/signup" class="card stack">
+      <label class="field">
+        <span class="field__label">Username</span>
+        <input name="username" required minlength="3" maxlength="30" pattern="[A-Za-z0-9._\-]+" autocomplete="username" autocapitalize="none" spellcheck="false" />
+        <span class="field__hint">This is the name people see. Letters, numbers, dots, dashes, underscores.</span>
+      </label>
+      <label class="field">
+        <span class="field__label">Password</span>
+        <input name="password" type="password" required minlength={MIN_PASSWORD} autocomplete="new-password" />
+        <span class="field__hint">At least {MIN_PASSWORD} characters, with an uppercase and a lowercase letter.</span>
+      </label>
+      <button class="button button--wide">Sign up</button>
+      <p class="muted authswap">Already have an account? <a href="/login">Log in</a></p>
+    </form>
+  </section>
+</Layout>

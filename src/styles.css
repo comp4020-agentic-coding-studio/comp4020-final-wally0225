@@ -1,4 +1,5 @@
-/* Light only. Tiffany blue (#0abab5) is the brand colour for marks, bars and
+/* Light by default; :root[data-theme="dark"] at the end of the file is the dark
+   palette, which the toggle in the app bar sets. Tiffany blue (#0abab5) is the brand colour for marks, bars and
    highlights; text and buttons use a deeper shade of it (#08807b), since white
    on Tiffany blue itself is too faint to read (about 2.4:1, against 4.8:1). */
 :root {
@@ -2802,4 +2803,137 @@ textarea {
   background: var(--accent);
   color: var(--accent-ink);
   font-size: 0.75rem;
+}
+
+
+/* --- dark mode ------------------------------------------------------------ */
+/* Set on <html> by the script in Layout.astro: the system's choice until
+   someone uses the toggle, then theirs. The same tokens, darker; text and
+   buttons keep the contrast they have in light. */
+
+:root[data-theme="dark"] {
+  --bg: #0f1415;
+  --surface: #182021;
+  --surface-2: #212b2c;
+  --ink: #eceff1;
+  --muted: #9aa5a8;
+  --line: #2b3738;
+  --accent: #3cc9c3;
+  --accent-2: #0abab5;
+  --accent-ink: #062524;
+  --accent-soft: #123736;
+  --live: #fb7185;
+  --live-soft: #3b1620;
+  --soon: #fbbf6a;
+  --soon-soft: #3a2a10;
+  --danger: #f28b82;
+  --danger-soft: #3c1b19;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.35);
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"] .brand__mark { color: #062524; }
+:root[data-theme="dark"] .pin--you { fill: #60a5fa; }
+:root[data-theme="dark"] .badge--owner { background: #2e2350; color: #c4b5fd; }
+:root[data-theme="dark"] .post__group { background: #221d36; }
+:root[data-theme="dark"] .repeat__option input:checked + span { border-color: #a78bfa; color: #ddd6fe; background: #2e2350; }
+
+:root[data-theme="dark"] .tagchip--sport { background: #14361f; color: #86efac; }
+:root[data-theme="dark"] .tagchip--study { background: #172a4d; color: #93c5fd; }
+:root[data-theme="dark"] .tagchip--food { background: #3d2412; color: #fdba74; }
+:root[data-theme="dark"] .tagchip--social { background: #40182f; color: #f9a8d4; }
+:root[data-theme="dark"] .tagchip--outdoors { background: #11352a; color: #6ee7b7; }
+:root[data-theme="dark"] .tagchip--music { background: #3a3210; color: #fde047; }
+:root[data-theme="dark"] .tagchip--games { background: #23274f; color: #a5b4fc; }
+
+:root[data-theme="dark"] .weekevent--going { background: #3a2c0c; }
+:root[data-theme="dark"] .weekevent--hosting { background: #3d2412; }
+:root[data-theme="dark"] .weekevent--full,
+:root[data-theme="dark"] .weekevent--cancelled { background: var(--surface-2); }
+
+/* the map's tiles are light; invert them so the map matches the page */
+:root[data-theme="dark"] .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9); }
+:root[data-theme="dark"] .leaflet-container { background: #1b2324; }
+:root[data-theme="dark"] .leaflet-control-attribution { background: rgb(15 20 21 / 0.8); color: var(--muted); }
+:root[data-theme="dark"] .leaflet-control-attribution a { color: var(--accent); }
+
+/* the toggle: shows the mode it would switch to */
+.themetoggle {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.themetoggle:hover {
+  color: var(--ink);
+}
+
+.themetoggle .icon {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.themetoggle__moon { display: none; }
+:root[data-theme="dark"] .themetoggle__sun { display: none; }
+:root[data-theme="dark"] .themetoggle__moon { display: block; }
+
+.appbar__end {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* narrow phones: the toggle joins the tabs in the app bar, so give both less room */
+@media (max-width: 30rem) {
+  .appbar__inner {
+    gap: 0.5rem;
+    padding-inline: 0.75rem;
+  }
+
+  .brand span:not(.brand__mark) {
+    display: none;
+  }
+
+  .tabs a {
+    padding-inline: 0.7rem;
+  }
+}
+
+/* sign up, log in, and the signed-out front page */
+.authchoice {
+  max-width: 24rem;
+}
+
+.authswap {
+  margin: 0;
+  text-align: center;
+}
+
+.logout {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.logout:hover {
+  color: var(--ink);
+}
+
+@media (max-width: 30rem) {
+  .logout {
+    padding-inline: 0.55rem;
+  }
 }

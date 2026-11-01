@@ -8,11 +8,29 @@ import { int, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-cor
 // volume outlives every deploy, and the migration trail keeps old state and
 // new code compatible.
 
-// Someone the app can tell apart from everyone else: a random id kept in a
-// cookie, and the first name they gave. No account, no password.
+// Someone with an account: a username and a password, kept as a salted
+// hash. `name` is the username as they typed it, which is what people see;
+// `username` is the same in lower case, which is what has to be unique.
+// Both hash and username are null only on people who arrived before accounts
+// existed; the volume still holds them, and they can't log in.
 export const people = sqliteTable("people", {
   id: text().primaryKey(),
   name: text().notNull(),
+  username: text().unique(),
+  passwordHash: text("password_hash"),
+  createdAt: int("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+});
+
+// A login. The cookie holds a random token; only its hash is kept here, so a
+// copy of the database can't be used to act as anyone. Logging out deletes
+// the row, which ends the session even for a copied cookie.
+export const sessions = sqliteTable("sessions", {
+  tokenHash: text("token_hash").primaryKey(),
+  personId: text("person_id")
+    .notNull()
+    .references(() => people.id),
   createdAt: int("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`(unixepoch() * 1000)`),

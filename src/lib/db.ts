@@ -314,6 +314,30 @@ export function cancelInvite(inviteId: number, personId: string, now: Date): Can
   return "cancelled";
 }
 
+export type EditResult = "edited" | "not-host" | "gone" | "started" | "size-low";
+
+// The host can change any detail until the Vybe starts. Checked here, on the
+// server. A Vybe can't be made smaller than the people already in it.
+export function editInvite(
+  inviteId: number,
+  personId: string,
+  now: Date,
+  details: { title: string; place: string; startsAt: Date; endsAt: Date; size: number; lat: number; lng: number; tag: string | null },
+): EditResult {
+  const result = db.transaction((tx): EditResult => {
+    const invite = tx.select().from(invites).where(eq(invites.id, inviteId)).get();
+    if (!invite || invite.cancelledAt) return "gone";
+    if (invite.hostId !== personId) return "not-host";
+    if (invite.startsAt <= now) return "started";
+    const going = tx.select().from(joins).where(eq(joins.inviteId, inviteId)).all().length;
+    if (details.size < going) return "size-low";
+    tx.update(invites).set(details).where(eq(invites.id, inviteId)).run();
+    return "edited";
+  });
+  if (result === "edited") announce(inviteId);
+  return result;
+}
+
 // The host can't leave their own invite; everyone else can.
 export function leaveInvite(inviteId: number, personId: string) {
   const invite = db.select().from(invites).where(eq(invites.id, inviteId)).get();

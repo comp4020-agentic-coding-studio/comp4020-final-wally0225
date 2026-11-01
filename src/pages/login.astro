@@ -1,0 +1,32 @@
+---
+import Icon from "../components/Icon.astro";
+import Layout from "../layouts/Layout.astro";
+import { currentPerson } from "../lib/identity";
+
+if (currentPerson(Astro.cookies)) return Astro.redirect("/");
+
+const errors: Record<string, string> = {
+  login: "That username and password don't match.",
+  locked: "Too many wrong passwords. Wait a few minutes and try again.",
+};
+const error = errors[Astro.url.searchParams.get("error") ?? ""];
+---
+
+<Layout title="Log in · Vybe" active="invites">
+  {error && <p class="toast" role="alert"><Icon name="alert" />{error}</p>}
+  <section class="hero">
+    <h1>Welcome <span class="accent">back</span></h1>
+    <form method="post" action="/api/login" class="card stack">
+      <label class="field">
+        <span class="field__label">Username</span>
+        <input name="username" required maxlength="30" autocomplete="username" autocapitalize="none" spellcheck="false" />
+      </label>
+      <label class="field">
+        <span class="field__label">Password</span>
+        <input name="password" type="password" required autocomplete="current-password" />
+      </label>
+      <button class="button button--wide">Log in</button>
+      <p class="muted authswap">New here? <a href="/signup">Sign up</a></p>
+    </form>
+  </section>
+</Layout>

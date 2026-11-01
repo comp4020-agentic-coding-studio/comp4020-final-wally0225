@@ -1,5 +1,7 @@
 ---
 import "../styles.css";
+import Icon from "../components/Icon.astro";
+import { currentPerson } from "../lib/identity";
 
 interface Props {
   title: string;
@@ -7,6 +9,7 @@ interface Props {
 }
 
 const { title, active } = Astro.props;
+const person = currentPerson(Astro.cookies);
 ---
 
 <!doctype html>
@@ -16,6 +19,16 @@ const { title, active } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f4f8f8" />
     <title>{title}</title>
+    <script is:inline>
+      // light or dark before first paint: the person's choice if they made
+      // one, otherwise the system's
+      try {
+        var saved = localStorage.getItem("vybe-theme");
+        var dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+        document.querySelector('meta[name="theme-color"]').content = dark ? "#0f1415" : "#f4f8f8";
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <header class="appbar">
@@ -24,15 +37,47 @@ const { title, active } = Astro.props;
           <span class="brand__mark" aria-hidden="true">V</span>
           <span>Vybe</span>
         </a>
+        <div class="appbar__end">
         <nav aria-label="site" class="tabs">
           <a href="/" aria-current={active === "invites" ? "page" : undefined}>Vybes</a>
-          <a href="/groups" aria-current={active === "groups" ? "page" : undefined}>Groups</a>
+          {person && <a href="/groups" aria-current={active === "groups" ? "page" : undefined}>Groups</a>}
           <a href="/readme/" aria-current={active === "about" ? "page" : undefined}>About</a>
         </nav>
+        {person && (
+          <form method="post" action="/api/logout">
+            <button class="logout" title={`Log out ${person.name}`}>Log out</button>
+          </form>
+        )}
+        <button type="button" class="themetoggle" data-theme-toggle aria-label="Switch to dark mode" title="Switch to dark mode">
+          <span class="themetoggle__moon"><Icon name="sun" /></span>
+          <span class="themetoggle__sun"><Icon name="moon" /></span>
+        </button>
+        </div>
       </div>
     </header>
     <main>
       <slot />
     </main>
+    <script>
+      const toggle = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
+      const root = document.documentElement;
+      const label = () => {
+        const next = root.dataset.theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
+        toggle?.setAttribute("aria-label", next);
+        toggle?.setAttribute("title", next);
+      };
+      label();
+      toggle?.addEventListener("click", () => {
+        const dark = root.dataset.theme !== "dark";
+        root.dataset.theme = dark ? "dark" : "light";
+        document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')!.content = dark ? "#0f1415" : "#f4f8f8";
+        try {
+          localStorage.setItem("vybe-theme", dark ? "dark" : "light");
+        } catch {
+          // private window: it still switches, it just isn't remembered
+        }
+        label();
+      });
+    </script>
   </body>
 </html>
