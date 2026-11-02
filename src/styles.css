@@ -2917,6 +2917,7 @@ textarea {
 }
 
 .logout {
+  white-space: nowrap;
   padding: 0.35rem 0.8rem;
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -2935,5 +2936,60 @@ textarea {
 @media (max-width: 30rem) {
   .logout {
     padding-inline: 0.55rem;
+    font-size: 0.8rem;
   }
+
+  .tabs a {
+    padding-inline: 0.55rem;
+  }
+}
+
+/* "Where" suggestions: a list under the field, over the map */
+.field:has(> .placelist) {
+  position: relative;
+}
+
+.placelist {
+  position: absolute;
+  z-index: 30;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 0.25rem 0 0;
+  padding: 0.25rem;
+  max-height: 16rem;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+}
+
+.placelist [role="option"] {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.placelist [role="option"]:hover,
+.placelist [role="option"][aria-selected="true"] {
+  background: var(--accent-soft);
+}
+
+.placelist__name {
+  font-weight: 650;
+}
+
+.placelist__detail {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.placelist__note {
+  padding: 0.4rem 0.7rem;
+  color: var(--muted);
+  font-size: 0.78rem;
 }
