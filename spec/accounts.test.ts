@@ -124,3 +124,32 @@ it("keeps one person's session from being another's", async () => {
   expect(await home("session=" + "0".repeat(64))).not.toContain('action="/api/invites"');
   expect(await home(a)).toContain('action="/api/invites"');
 });
+
+it("stops guessing at one account after too many wrong passwords, even for the right one", async () => {
+  const username = uniqueName("Guessed");
+  await post("/api/signup", { username, password: PASSWORD });
+
+  let locked = false;
+  for (let i = 0; i < 12 && !locked; i++) {
+    const res = await post("/api/login", { username, password: `Wrong-guess-${i}` });
+    expect(cookieFrom(res), "a wrong password logged them in").toBeUndefined();
+    locked = /error=locked/.test(where(res));
+  }
+  expect(locked, "twelve wrong passwords were all just 'wrong'").toBe(true);
+
+  // locked out means the right password doesn't work either, for now
+  const right = await post("/api/login", { username, password: PASSWORD });
+  expect(where(right)).toMatch(/error=locked/);
+  expect(cookieFrom(right), "the right password got in while locked out").toBeUndefined();
+  // the lockout is also the same whatever the capitals
+  expect(where(await post("/api/login", { username: username.toUpperCase(), password: PASSWORD }))).toMatch(/error=locked/);
+});
+
+it("keeps one account's lockout from locking anyone else out", async () => {
+  const [a, b] = [uniqueName("Targeted"), uniqueName("Bystander")];
+  await post("/api/signup", { username: a, password: PASSWORD });
+  await post("/api/signup", { username: b, password: PASSWORD });
+  for (let i = 0; i < 12; i++) await post("/api/login", { username: a, password: `Wrong-guess-${i}` });
+
+  expect(cookieFrom(await post("/api/login", { username: b, password: PASSWORD })), "a bystander was locked out").toBeDefined();
+});

@@ -44,4 +44,4 @@ Choices made while building, named so they can be accepted or changed:
 
 `spec/accounts.test.ts`, against the running app: the password rules, the username rules, unique usernames whatever the capitals, login with the right details and none other, the same answer for a wrong username and a wrong password, signed-out visitors kept out of everything but the front page and the README, no entry with just a first name, logout ending the session on the server, and one person's session not being another's.
 
-The lockout and the hashing aren't checked there. The lockout has not been tested at all yet, and the hashing can only be read in `src/lib/accounts.ts`, since a check against the running app can't see the database.
+The lockout is checked there too: after too many wrong passwords even the right one is refused, whatever the capitals, and one account's lockout doesn't lock anyone else out. It doesn't check how long the lockout lasts, which would mean waiting 15 minutes. The hashing isn't checked, since a check against the running app can't see the database; it can only be read in `src/lib/accounts.ts`.
