@@ -24,6 +24,11 @@ means here; these are the rules I hold you to while building it.
   map's starting view are worked out on the phone.
 - Let more people join than a Vybe has room for. The server decides; the page
   only shows what the server said.
+- Store or log a password, or let anyone in without logging in. Passwords are
+  kept only as salted hashes, the session cookie holds a random token (never an
+  id or a name), and logs show a username, never what someone typed. Only the
+  front page, sign-up, log-in and the README are open to people who aren't
+  logged in.
 
 ## Building
 
