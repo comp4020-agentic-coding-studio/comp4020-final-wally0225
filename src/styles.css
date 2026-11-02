@@ -836,9 +836,42 @@ select {
   margin-top: 0.75rem;
 }
 
-/* the dialog's title bar; inline on phones the button above says it all */
+/* the form's title bar and close button: the dialog's on laptops, and on
+   phones the way to close it, since the bottom bar's Vybe button opens it */
 .post__head {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.post__head h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 750;
+}
+
+.post__close {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.post__close:hover {
+  color: var(--ink);
+}
+
+.post__close .icon {
+  transform: rotate(45deg);
+}
+
+.post {
+  scroll-margin-top: 5rem;
 }
 
 /* Laptop: the form opens as a dialog over the page, fields on the left and
@@ -885,35 +918,6 @@ select {
 
   .post__head {
     grid-area: head;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .post__head h2 {
-    margin: 0;
-    font-size: 1.35rem;
-    font-weight: 750;
-  }
-
-  .post__close {
-    display: grid;
-    place-items: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    border: 0;
-    border-radius: 50%;
-    background: var(--surface-2);
-    color: var(--muted);
-    cursor: pointer;
-  }
-
-  .post__close:hover {
-    color: var(--ink);
-  }
-
-  .post__close .icon {
-    transform: rotate(45deg);
   }
 
   .post__what {
@@ -2992,4 +2996,103 @@ textarea {
   padding: 0.4rem 0.7rem;
   color: var(--muted);
   font-size: 0.78rem;
+}
+
+
+/* --- bottom bar (phones) ---------------------------------------------------- */
+/* Home, Vybe (post one) and Groups, fixed to the bottom like a phone app's
+   tab bar. Under 60rem, the same width where the laptop layout starts. The
+   top bar keeps About, log out and the theme. */
+
+.bottomnav {
+  display: none;
+}
+
+@media (max-width: 59.99rem) {
+  body:has(.bottomnav) {
+    --navh: calc(3.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .tabs__moved {
+    display: none;
+  }
+
+  .bottomnav {
+    position: fixed;
+    z-index: 25;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    padding: 0.25rem 0.5rem calc(0.25rem + env(safe-area-inset-bottom, 0px));
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: saturate(1.4) blur(12px);
+    -webkit-backdrop-filter: saturate(1.4) blur(12px);
+    border-top: 1px solid var(--line);
+  }
+
+  .bottomnav a {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 0.1rem;
+    min-height: 3.25rem;
+    border-radius: 12px;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 650;
+    text-decoration: none;
+  }
+
+  .bottomnav .micon {
+    width: 1.6rem;
+    height: 1.6rem;
+  }
+
+  .bottomnav a[aria-current="page"],
+  .bottomnav a[aria-pressed="true"] {
+    color: var(--accent);
+  }
+
+  /* the Vybe button always wears the brand colour: it's the main action */
+  .bottomnav a[data-post-open] .micon {
+    color: var(--accent);
+    width: 1.9rem;
+    height: 1.9rem;
+  }
+
+  /* with the form open, Home isn't where you are */
+  :root:has(.post[open]) .bottomnav a[aria-current="page"][href="/"] {
+    color: var(--muted);
+  }
+
+  /* room for the bar under the content, and under a chat's message box */
+  body:has(.bottomnav) main {
+    padding-bottom: calc(4rem + var(--navh));
+  }
+
+  body:has(.bottomnav) .chat {
+    height: calc(100dvh - 9.5rem - var(--navh));
+  }
+
+  /* Post a Vybe moves to the bar; List | Map | Week takes the full width */
+  .toolbar .post__toggle {
+    display: none;
+  }
+
+  .toolbar .viewswitch {
+    position: static;
+  }
+
+  :root[data-view] .toolbar .viewswitch {
+    display: flex;
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+  }
+
+  .toolbar .viewswitch__button {
+    flex: 1;
+    padding-inline: 0.5rem;
+  }
 }
