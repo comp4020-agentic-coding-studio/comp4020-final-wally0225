@@ -2573,6 +2573,9 @@ textarea {
 
 .chat {
   display: grid;
+  /* one column no wider than the card: without this it grows to fit the
+     longest title and place line, and pushes the Send button off the card */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto auto minmax(0, 1fr) auto auto;
   max-width: 44rem;
   margin: 0 auto;

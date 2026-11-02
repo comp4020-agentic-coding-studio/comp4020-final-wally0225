@@ -99,7 +99,7 @@ const day = (at: Date) => at.toLocaleDateString("en-AU", { timeZone: "Australia/
         <form method="post" action="/api/chat" class="chat__compose" data-chat-form>
           <input type="hidden" name="invite" value={invite.id} />
           <label class="visually-hidden" for="chat-body">Message</label>
-          <textarea id="chat-body" name="body" rows="1" maxlength={MAX_MESSAGE} required placeholder="Say hello, or “running 5 min late”" autocomplete="off"></textarea>
+          <textarea id="chat-body" name="body" rows="1" maxlength={MAX_MESSAGE} required placeholder="Say hello or “running late”" autocomplete="off"></textarea>
           <button class="button chat__send" aria-label="Send"><Icon name="send" /></button>
         </form>
       </section>
