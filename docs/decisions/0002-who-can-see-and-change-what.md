@@ -1,6 +1,6 @@
 # 0002: Who can see and change what, decided on the server
 
-Status: Accepted, 2026-10-20
+Status: Accepted, 2026-10-20. Partly superseded by [0003](0003-accounts-with-username-and-password.md): a person is now an account, not a first name and a cookie. The rules below about who can see and change what still hold.
 
 ## Context
 
