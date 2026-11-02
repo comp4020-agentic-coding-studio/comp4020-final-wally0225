@@ -1,6 +1,7 @@
 ---
 import "../styles.css";
 import Icon from "../components/Icon.astro";
+import MaterialIcon from "../components/MaterialIcon.astro";
 import { currentPerson } from "../lib/identity";
 
 interface Props {
@@ -39,8 +40,9 @@ const person = currentPerson(Astro.cookies);
         </a>
         <div class="appbar__end">
         <nav aria-label="site" class="tabs">
-          <a href="/" aria-current={active === "invites" ? "page" : undefined}>Vybes</a>
-          {person && <a href="/groups" aria-current={active === "groups" ? "page" : undefined}>Groups</a>}
+          {/* on phones, signed in, Vybes and Groups move to the bar at the bottom */}
+          <a href="/" class={person ? "tabs__moved" : undefined} aria-current={active === "invites" ? "page" : undefined}>Vybes</a>
+          {person && <a href="/groups" class="tabs__moved" aria-current={active === "groups" ? "page" : undefined}>Groups</a>}
           <a href="/readme/" aria-current={active === "about" ? "page" : undefined}>About</a>
         </nav>
         {person && (
@@ -58,6 +60,25 @@ const person = currentPerson(Astro.cookies);
     <main>
       <slot />
     </main>
+    {
+      person && (
+        <nav class="bottomnav" aria-label="main">
+          <a href="/" aria-current={active === "invites" ? "page" : undefined}>
+            <MaterialIcon name="home" />
+            <span>Home</span>
+          </a>
+          {/* on the home page the script opens the form in place; elsewhere this goes there with it open */}
+          <a href="/?post=1#post" data-post-open aria-label="Post a Vybe" aria-pressed="false">
+            <MaterialIcon name="add_circle" />
+            <span>Vybe</span>
+          </a>
+          <a href="/groups" aria-current={active === "groups" ? "page" : undefined}>
+            <MaterialIcon name="groups" />
+            <span>Groups</span>
+          </a>
+        </nav>
+      )
+    }
     <script>
       const toggle = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
       const root = document.documentElement;

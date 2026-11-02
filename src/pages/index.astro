@@ -89,7 +89,7 @@ const postRefused = ["details", "time", "end", "size", "spot", "not-group-host"]
         </section>
 
         <div class="toolbar">
-        <details class="post" id="post" open={postRefused || canPostIn.some((g) => g.id === presetGroup)}>
+        <details class="post" id="post" open={postRefused || Astro.url.searchParams.has("post") || canPostIn.some((g) => g.id === presetGroup)}>
           <summary class="button post__toggle">
             <Icon name="plus" />
             Post a Vybe
@@ -267,6 +267,16 @@ const postRefused = ["details", "time", "end", "size", "spot", "not-group-host"]
   const post = document.querySelector<HTMLDetailsElement>("details.post");
   if (post) {
     post.querySelector("[data-post-close]")?.addEventListener("click", () => (post.open = false));
+    // the Vybe button in the bottom bar (phones) opens and closes the form
+    // in place; without the script it's a link to this page with it open
+    const navPost = document.querySelector<HTMLElement>("[data-post-open]");
+    navPost?.addEventListener("click", (e) => {
+      e.preventDefault();
+      post.open = !post.open;
+      if (post.open) post.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+    post.addEventListener("toggle", () => navPost?.setAttribute("aria-pressed", String(post.open)));
+    navPost?.setAttribute("aria-pressed", String(post.open));
     post.addEventListener("click", (e) => {
       if (e.target === post) post.open = false;
     });
