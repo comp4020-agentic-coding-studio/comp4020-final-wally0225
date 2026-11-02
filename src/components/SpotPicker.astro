@@ -23,6 +23,7 @@ const has = lat !== null && lng !== null;
   import L from "leaflet";
   import "leaflet/dist/leaflet.css";
   import { ANU } from "../lib/geo";
+  import { type Place, nameAt, searchPlaces } from "../lib/places";
 
   const box = document.querySelector<HTMLElement>("[data-picker]");
   if (box) {
@@ -46,17 +47,185 @@ const has = lat !== null && lng !== null;
       pin = L.circleMarker(at, { radius: 9, className: "pin pin--picked" }).addTo(map);
       map.setView(at, 16);
     }
-    map.on("click", (e) => {
-      lat.value = e.latlng.lat.toFixed(6);
-      lng.value = e.latlng.lng.toFixed(6);
-      pin ??= L.circleMarker(e.latlng, { radius: 9, className: "pin pin--picked" }).addTo(map);
-      pin.setLatLng(e.latlng);
+
+    // the one place a spot gets set: the form's fields, the pin and the hint
+    const setSpot = (at: L.LatLng) => {
+      lat.value = at.lat.toFixed(6);
+      lng.value = at.lng.toFixed(6);
+      pin ??= L.circleMarker(at, { radius: 9, className: "pin pin--picked" }).addTo(map);
+      pin.setLatLng(at);
       hint.textContent = "Spot picked. Tap again to move it.";
       hint.classList.remove("field__hint--error");
+    };
+
+    const form = box.closest("form")!;
+    const where = form.querySelector<HTMLInputElement>('input[name="place"]');
+    const label = where?.closest("label");
+
+    // --- "Where" suggests places as you type; picking one pins it ---------
+    // Everything here is on top of typing the place and tapping the map: if
+    // the search can't be reached the form still works as it always did.
+    let list: HTMLUListElement | undefined;
+    let shown: Place[] = [];
+    let active = -1;
+    let searching: AbortController | undefined;
+    let timer: number | undefined;
+    const cache = new Map<string, Place[]>();
+
+    if (where && label) {
+      list = document.createElement("ul");
+      list.id = "placelist";
+      list.className = "placelist";
+      list.setAttribute("role", "listbox");
+      list.setAttribute("aria-label", "Suggested places");
+      list.hidden = true;
+      label.append(list);
+      where.setAttribute("role", "combobox");
+      where.setAttribute("aria-autocomplete", "list");
+      where.setAttribute("aria-controls", "placelist");
+      where.setAttribute("aria-expanded", "false");
+      where.autocomplete = "off";
+    }
+
+    const close = () => {
+      if (!list || !where) return;
+      list.hidden = true;
+      shown = [];
+      active = -1;
+      where.setAttribute("aria-expanded", "false");
+      where.removeAttribute("aria-activedescendant");
+    };
+
+    const highlight = (i: number) => {
+      if (!list || !where) return;
+      active = i;
+      list.querySelectorAll<HTMLElement>('[role="option"]').forEach((li, n) => li.setAttribute("aria-selected", String(n === i)));
+      if (i >= 0) where.setAttribute("aria-activedescendant", `place-${i}`);
+      else where.removeAttribute("aria-activedescendant");
+      list.querySelector<HTMLElement>(`#place-${i}`)?.scrollIntoView({ block: "nearest" });
+    };
+
+    const pick = (place: Place) => {
+      if (!where) return;
+      where.value = place.name;
+      const at = L.latLng(place.lat, place.lng);
+      setSpot(at);
+      map.setView(at, 17);
+      close();
+    };
+
+    // names and streets come from a third party, so they go in as text
+    const render = (places: Place[], note?: string) => {
+      if (!list || !where) return;
+      list.replaceChildren();
+      shown = places;
+      active = -1;
+      places.forEach((place, i) => {
+        const li = document.createElement("li");
+        li.id = `place-${i}`;
+        li.setAttribute("role", "option");
+        li.setAttribute("aria-selected", "false");
+        const name = document.createElement("span");
+        name.className = "placelist__name";
+        name.textContent = place.name;
+        li.append(name);
+        if (place.detail) {
+          const detail = document.createElement("span");
+          detail.className = "placelist__detail";
+          detail.textContent = place.detail;
+          li.append(detail);
+        }
+        li.addEventListener("click", () => pick(place));
+        list!.append(li);
+      });
+      if (note) {
+        const li = document.createElement("li");
+        li.className = "placelist__note";
+        li.setAttribute("role", "status");
+        li.textContent = note;
+        list.append(li);
+      }
+      if (places.length > 0) {
+        const credit = document.createElement("li");
+        credit.className = "placelist__note";
+        credit.setAttribute("role", "presentation");
+        credit.textContent = "Places from Photon, © OpenStreetMap";
+        list.append(credit);
+      }
+      list.hidden = places.length === 0 && !note;
+      where.setAttribute("aria-expanded", String(!list.hidden));
+    };
+
+    const search = async (query: string) => {
+      searching?.abort();
+      searching = new AbortController();
+      try {
+        const places = cache.get(query) ?? (await searchPlaces(query, searching.signal));
+        cache.set(query, places);
+        // typed on since: this answer is for words that are gone
+        if (where!.value.trim() !== query) return;
+        render(places);
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+        render([], "Place search isn't available right now. Type the place and tap the map.");
+      }
+    };
+
+    where?.addEventListener("input", () => {
+      window.clearTimeout(timer);
+      const query = where.value.trim();
+      if (query.length < 2) {
+        searching?.abort();
+        close();
+        return;
+      }
+      timer = window.setTimeout(() => search(query), 250);
+    });
+
+    where?.addEventListener("keydown", (e) => {
+      if (!list || list.hidden || shown.length === 0) return;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        highlight((active + 1) % shown.length);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        highlight((active - 1 + shown.length) % shown.length);
+      } else if (e.key === "Enter" && active >= 0) {
+        // choosing a suggestion, not posting the form
+        e.preventDefault();
+        pick(shown[active]);
+      } else if (e.key === "Escape") {
+        // closes the list, not the post dialog
+        e.stopPropagation();
+        close();
+      }
+    });
+
+    // a click on a suggestion mustn't blur the field before it registers
+    list?.addEventListener("mousedown", (e) => e.preventDefault());
+    where?.addEventListener("blur", () => window.setTimeout(close, 100));
+
+    // --- tapping the map pins the spot and puts its name in "Where" -------
+    let naming: AbortController | undefined;
+    map.on("click", async (e) => {
+      setSpot(e.latlng);
+      close();
+      if (!where) return;
+      naming?.abort();
+      naming = new AbortController();
+      hint.textContent = "Spot picked. Finding its name…";
+      try {
+        const name = await nameAt(e.latlng.lat, e.latlng.lng, naming.signal);
+        // nothing nearby has a name, or it can't be reached: keep what's typed
+        if (name) where.value = name;
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+      }
+      hint.textContent = "Spot picked. Tap again to move it.";
     });
 
     // a spot is required; say so here rather than after a round trip
-    box.closest("form")!.addEventListener("submit", (e) => {
+    form.addEventListener("submit", (e) => {
       if (lat.value) return;
       e.preventDefault();
       hint.textContent = "Tap the map where it is.";
