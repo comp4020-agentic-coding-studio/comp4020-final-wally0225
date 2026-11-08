@@ -3506,3 +3506,15 @@ textarea {
     background: var(--accent-soft);
   }
 }
+
+/* --- laptop map: fill the screen beside the list ----------------------------
+   The general .mapview__map height (min(70vh, 34rem)) comes later in this file
+   than the laptop rule near the top, so it was winning and capping the map at
+   34rem, leaving a blank strip under it. The sticky map starts 5rem down;
+   this leaves room for the "N Vybes in this area" line and a small margin. */
+@media (min-width: 60rem) {
+  .browse > .mapview .mapview__map {
+    height: calc(100dvh - 9rem);
+    min-height: 28rem;
+  }
+}
