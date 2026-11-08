@@ -16,7 +16,7 @@ interface Props {
   variant: "mine" | "open" | "past";
   // the groups this person is in; a group's Vybe asks them to join it first
   groupsIn?: Set<number>;
-  // show a picture across the top: the Vybe's tag, or failing that this one
+  // the picture for an untagged Vybe (a group's cover); tagged ones use the tag's
   cover?: Cover;
   // how many messages its chat holds; only given for Vybes this person is going to
   messages?: number;
@@ -25,7 +25,9 @@ interface Props {
 const { invite, now, personId, variant, groupsIn = new Set(), cover, messages = 0 } = Astro.props;
 const needsGroup = invite.groupId !== null && !groupsIn.has(invite.groupId);
 const tag = invite.tag && isTag(invite.tag) ? invite.tag : undefined;
-const picture = cover ? coverUrl(tag ?? cover) : undefined;
+// a tagged Vybe always shows its tag's picture; a group's page passes its
+// cover for the untagged ones
+const picture = tag ? coverUrl(tag) : cover ? coverUrl(cover) : undefined;
 
 const count = invite.going.length;
 const full = count >= invite.size;

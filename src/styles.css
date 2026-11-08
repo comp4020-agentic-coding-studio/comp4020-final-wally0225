@@ -3099,3 +3099,241 @@ textarea {
     padding-inline: 0.5rem;
   }
 }
+
+/* --- signed-out pages: photo + panel ---------------------------------------
+   A real photo of people doing something together sets what Vybe is for
+   before anyone reads a word. Side by side on laptops, a band on phones. */
+.auth {
+  display: grid;
+  gap: 0;
+  margin: -1.25rem -1rem 0;
+}
+
+.auth__photo {
+  position: relative;
+  margin: 0;
+  height: 15rem;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.auth__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 55% 45%;
+}
+
+/* a dark fade at the bottom so the caption reads on any photo */
+.auth__photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(0 0 0 / 0) 40%, rgb(0 0 0 / 0.6));
+  pointer-events: none;
+}
+
+.auth__caption {
+  position: absolute;
+  z-index: 1;
+  left: 1rem;
+  right: 1rem;
+  bottom: 2.4rem;
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+  color: #fff;
+}
+
+.auth__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.18);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgb(255 255 255 / 0.3);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.auth__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 0 3px rgb(74 222 128 / 0.3);
+}
+
+.auth__quote {
+  display: none;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  max-width: 26rem;
+  text-shadow: 0 1px 12px rgb(0 0 0 / 0.3);
+}
+
+.auth__panel {
+  position: relative;
+  margin-top: -1.5rem;
+  padding: 1.75rem 1.25rem 2rem;
+  background: var(--bg);
+  border-radius: 24px 24px 0 0;
+  display: grid;
+  gap: 0.9rem;
+  align-content: start;
+}
+
+.auth__panel h1 {
+  margin: 0;
+  font-size: clamp(2rem, 7vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.auth__panel .lead {
+  margin: 0;
+}
+
+.auth__eyebrow {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.auth__steps {
+  list-style: none;
+  margin: 0.25rem 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.auth__steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 550;
+}
+
+.auth__steps span {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.authform {
+  margin-top: 0.25rem;
+}
+
+.authform input {
+  min-height: 3rem;
+}
+
+.authchoice {
+  max-width: none;
+  margin-top: 0.5rem;
+}
+
+@media (min-width: 60rem) {
+  .auth {
+    margin: 1rem 0 0;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 3.5rem;
+    align-items: center;
+    min-height: calc(100vh - 9rem);
+  }
+
+  .auth__photo {
+    height: min(40rem, calc(100vh - 9rem));
+    border-radius: 28px;
+    box-shadow: 0 24px 60px rgb(8 60 58 / 0.18);
+  }
+
+  .auth__caption {
+    left: 1.75rem;
+    right: 1.75rem;
+    bottom: 1.75rem;
+  }
+
+  .auth__quote {
+    display: block;
+  }
+
+  .auth__panel {
+    margin: 0;
+    padding: 0;
+    background: none;
+    max-width: 27rem;
+  }
+}
+
+/* --- cards: lift on hover, a softer cover ---------------------------------- */
+@media (hover: hover) {
+  .invite:not(.invite--past) {
+    transition:
+      box-shadow 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.2s ease;
+  }
+  .invite:not(.invite--past):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgb(8 60 58 / 0.06), 0 14px 32px rgb(8 60 58 / 0.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invite:not(.invite--past):hover { transform: none; }
+}
+
+.invite__cover {
+  height: 6.5rem;
+  position: relative;
+}
+
+.invite__cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(0 0 0 / 0) 55%, rgb(0 0 0 / 0.12));
+}
+
+.invite--past .invite__cover {
+  height: 4.5rem;
+}
+
+/* --- signed-in greeting: a small banner with the photo --------------------- */
+.hello {
+  position: relative;
+  padding: 1.1rem 1.15rem;
+  border-radius: 22px;
+  overflow: hidden;
+  color: #fff;
+  background:
+    linear-gradient(100deg, rgb(6 60 58 / 0.92) 0%, rgb(6 60 58 / 0.72) 55%, rgb(6 60 58 / 0.25) 100%),
+    url("/photos/picnic.jpg") center 40% / cover;
+  box-shadow: 0 10px 30px rgb(8 60 58 / 0.16);
+}
+
+.hello .muted {
+  color: rgb(255 255 255 / 0.82);
+}
+
+.hello .avatar {
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 0.5);
+}
