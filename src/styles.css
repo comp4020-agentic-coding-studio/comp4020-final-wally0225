@@ -3337,3 +3337,141 @@ textarea {
 .hello .avatar {
   box-shadow: 0 0 0 3px rgb(255 255 255 / 0.5);
 }
+
+/* --- groups page header: the same photo banner as the home greeting -------- */
+.pagehead--photo {
+  position: relative;
+  padding: 1.5rem 1.25rem;
+  border-radius: 22px;
+  overflow: hidden;
+  color: #fff;
+  background:
+    linear-gradient(100deg, rgb(6 60 58 / 0.92) 0%, rgb(6 60 58 / 0.7) 55%, rgb(6 60 58 / 0.2) 100%),
+    url("/photos/hikers.jpg") center 60% / cover;
+  box-shadow: 0 10px 30px rgb(8 60 58 / 0.16);
+  margin-bottom: 1.25rem;
+}
+
+.pagehead--photo h1 {
+  margin: 0.15rem 0 0.35rem;
+  color: #fff;
+}
+
+.pagehead--photo .muted {
+  color: rgb(255 255 255 / 0.85);
+  max-width: 28rem;
+}
+
+.pagehead__eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7ff0ea;
+}
+
+/* --- empty states: a calm tinted panel with a small mark ------------------- */
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  padding: 1.75rem 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--line));
+  background: linear-gradient(180deg, var(--accent-soft), color-mix(in srgb, var(--accent-soft) 30%, var(--surface)));
+  border-radius: 20px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.empty::before {
+  content: "";
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2308807b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='3'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4'/%3E%3C/svg%3E")
+      center / 1.35rem no-repeat,
+    var(--surface);
+  box-shadow: 0 4px 14px rgb(8 60 58 / 0.1);
+}
+
+:root[data-theme="dark"] .empty::before {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235eead4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='3'/%3E%3Cpath d='M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4'/%3E%3C/svg%3E")
+      center / 1.35rem no-repeat,
+    var(--surface);
+}
+
+/* --- section headings ------------------------------------------------------ */
+.section h2 {
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+/* --- phone bottom bar: floating, with the Vybe button raised --------------- */
+@media (max-width: 59.99rem) {
+  body:has(.bottomnav) {
+    --navh: calc(5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .bottomnav {
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: calc(0.6rem + env(safe-area-inset-bottom, 0px));
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: 0 10px 30px rgb(8 60 58 / 0.18);
+  }
+
+  .bottomnav a {
+    min-height: 3.1rem;
+  }
+
+  .bottomnav a[data-post-open] {
+    color: var(--accent);
+  }
+
+  .bottomnav a[data-post-open] {
+    position: relative;
+    align-content: start;
+  }
+
+  .bottomnav a[data-post-open]::before {
+    content: "";
+    position: absolute;
+    top: -1.75rem;
+    left: 50%;
+    width: 3.3rem;
+    height: 3.3rem;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    box-shadow:
+      0 0 0 4px var(--bg),
+      0 8px 20px rgb(8 128 123 / 0.4);
+  }
+
+  .bottomnav a[data-post-open] .micon {
+    position: relative;
+    margin-top: -1.05rem;
+    margin-bottom: 0.95rem;
+    width: 1.9rem;
+    height: 1.9rem;
+    color: #fff;
+  }
+}
+
+/* the group page tints are light-only pastels; in dark mode they turn into a
+   faint wash of the group's hue instead of a white glare */
+:root[data-theme="dark"] .glayout__main .empty {
+  background: linear-gradient(180deg, hsl(var(--hue) 35% 16%), var(--surface));
+  border-color: hsl(var(--hue) 25% 24%);
+}
+
+:root[data-theme="dark"] .mcard--owner,
+:root[data-theme="dark"] .mcard--host {
+  background: linear-gradient(180deg, hsl(var(--hue) 35% 18%), var(--surface) 60%);
+  border-color: hsl(var(--hue) 25% 28%);
+}
