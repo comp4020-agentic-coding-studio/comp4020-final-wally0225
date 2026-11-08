@@ -48,6 +48,10 @@ import Icon from "./Icon.astro";
 
   let offset = 0; // weeks from this one
   let picked = ""; // the day shown on a phone
+  // a laptop column shows its first few Vybes and a "+N more" for the rest,
+  // so one busy day doesn't stretch the whole week; these are the days opened
+  const SHOWN = 3;
+  const expanded = new Set<string>();
 
   function items(): Item[] {
     const seen = new Set<string>();
@@ -124,13 +128,19 @@ import Icon from "./Icon.astro";
             ? `<p class="weekcol__empty">Nothing on</p>`
             : list
                 .map(
-                  (i) =>
-                    `<a class="weekevent weekevent--${i.state}" href="#${i.id}" data-week-event="${i.id}">` +
+                  (i, n) =>
+                    `<a class="weekevent weekevent--${i.state}${n >= SHOWN ? " weekevent--extra" : ""}" href="#${i.id}" data-week-event="${i.id}">` +
                     `<span class="weekevent__time">${fmt(i.starts, { hour: "numeric", minute: "2-digit" })}</span>` +
                     `<span class="weekevent__title"></span>` +
                     `<span class="weekevent__place"></span></a>`,
                 )
-                .join(""));
+                .join("") +
+              (list.length > SHOWN
+                ? `<button type="button" class="weekcol__more" data-week-more="${day}" aria-expanded="${expanded.has(day)}">` +
+                  (expanded.has(day) ? "Show less" : `+${list.length - SHOWN} more`) +
+                  `</button>`
+                : ""));
+        if (expanded.has(day)) col.classList.add("weekcol--expanded");
         // titles and places are people's own words: set as text, never HTML
         col.querySelectorAll<HTMLElement>("[data-week-event]").forEach((el, n) => {
           el.querySelector(".weekevent__title")!.textContent = list[n].title;
@@ -161,6 +171,14 @@ import Icon from "./Icon.astro";
         const n = Number(step.dataset.weekStep);
         offset = n === 0 ? 0 : offset + n;
         if (n === 0) picked = dayKey(Date.now());
+        render();
+        return;
+      }
+      const more = target.closest<HTMLElement>("[data-week-more]");
+      if (more) {
+        const d = more.dataset.weekMore!;
+        if (expanded.has(d)) expanded.delete(d);
+        else expanded.add(d);
         render();
         return;
       }
