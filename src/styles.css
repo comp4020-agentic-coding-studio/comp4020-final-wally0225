@@ -3548,3 +3548,26 @@ textarea {
     margin-top: 0;
   }
 }
+
+/* --- phone map view: fits the screen, nothing to scroll ---------------------
+   The map takes the space between List | Map | Week and the bottom bar. With
+   the map open the page itself doesn't scroll, so a swipe always pans the map
+   rather than the page. 15rem is the app bar, greeting and view switch above
+   the map; 4.5rem is the "N Vybes in this area" line under it (two lines on a phone) and clear of the raised Vybe button. The lock lifts
+   while the post form is open, so a long form can still scroll. */
+@media (max-width: 59.99rem) {
+  :root[data-view="map"] .mapview__map {
+    height: calc(100dvh - 15rem - 4.5rem - var(--navh, 0px));
+    min-height: 15rem;
+  }
+
+  :root[data-view="map"] body:has(.bottomnav) main {
+    padding-bottom: 0;
+  }
+
+  :root[data-view="map"]:not(:has(.post[open])),
+  :root[data-view="map"]:not(:has(.post[open])) body {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+}
