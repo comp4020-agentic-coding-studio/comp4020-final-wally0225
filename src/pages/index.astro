@@ -1,4 +1,5 @@
 ---
+import AuthShell from "../components/AuthShell.astro";
 import Avatar from "../components/Avatar.astro";
 import Icon from "../components/Icon.astro";
 import InviteCard from "../components/InviteCard.astro";
@@ -66,16 +67,22 @@ const postRefused = ["details", "time", "end", "size", "spot", "not-group-host"]
 
   {
     !person ? (
-      <section class="hero">
+      <AuthShell photo="picnic">
+        <p class="auth__eyebrow">For ANU students</p>
         <h1>
           Find people to <span class="accent">do things</span> with
         </h1>
         <p class="lead">Post what you want to do, when and where. Anyone free can join until it's full.</p>
-        <div class="card stack authchoice">
+        <ul class="auth__steps">
+          <li><span>1</span>Post a Vybe: what, where, when, how many</li>
+          <li><span>2</span>People join until it's full, live</li>
+          <li><span>3</span>Turn up. Running late is fine</li>
+        </ul>
+        <div class="stack authchoice">
           <a class="button button--wide" href="/signup">Sign up</a>
           <a class="button button--wide button--outline" href="/login">Log in</a>
         </div>
-      </section>
+      </AuthShell>
     ) : (
       <>
         <section class="hello">

@@ -1,0 +1,24 @@
+---
+// The signed-out pages (front page, sign up, log in): a photo of people out
+// doing something together on one side, the words and the form on the other.
+// On phones the photo becomes a band across the top. The photos are CC0 from
+// StockSnap and served from public/photos, so nothing is hotlinked.
+interface Props {
+  photo?: "picnic" | "hikers";
+  caption?: string;
+}
+const { photo = "picnic", caption = "Pickleball, a picnic, a study session. Someone nearby is up for it." } = Astro.props;
+---
+
+<section class="auth">
+  <figure class="auth__photo">
+    <img src={`/photos/${photo}.jpg`} alt="" width="960" height="652" fetchpriority="high" />
+    <figcaption class="auth__caption">
+      <span class="auth__pill"><span class="auth__dot" aria-hidden="true"></span>Happening around ANU</span>
+      <span class="auth__quote">{caption}</span>
+    </figcaption>
+  </figure>
+  <div class="auth__panel">
+    <slot />
+  </div>
+</section>
